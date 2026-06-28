@@ -88,6 +88,45 @@ export function formatWindowLabel(seconds?: number): string {
   return `${Math.round(seconds / 60)}-min`;
 }
 
+const ANSI_PATTERN = /\x1b\[[0-9;]*m/g;
+
+export function stripAnsi(str: string): string {
+  return str.replace(ANSI_PATTERN, "");
+}
+
+export function visibleLength(str: string): number {
+  return stripAnsi(str).length;
+}
+
+export function truncateVisible(str: string, maxVisible: number): string {
+  if (visibleLength(str) <= maxVisible) return str;
+  if (maxVisible <= 1) return str.slice(0, maxVisible);
+
+  let visible = 0;
+  let result = "";
+  let i = 0;
+  while (i < str.length && visible < maxVisible - 1) {
+    if (str[i] === "\x1b") {
+      const match = str.slice(i).match(/^\x1b\[[0-9;]*m/);
+      if (match) {
+        result += match[0];
+        i += match[0].length;
+        continue;
+      }
+    }
+    result += str[i];
+    visible++;
+    i++;
+  }
+  return `${result}…`;
+}
+
+export function padVisible(str: string, targetVisible: number): string {
+  const len = visibleLength(str);
+  if (len >= targetVisible) return str;
+  return str + " ".repeat(targetVisible - len);
+}
+
 export function progressBar(usedPercent: number, width = 12): string {
   const clamped = Math.min(Math.max(usedPercent, 0), 100);
   const filled = Math.round((clamped / 100) * width);

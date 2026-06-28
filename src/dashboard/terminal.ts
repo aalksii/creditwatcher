@@ -2,7 +2,12 @@ import { homedir } from "node:os";
 import type { DisplayOptions } from "../display-options.js";
 import { formatAuthLines } from "../display-options.js";
 import type { ProviderQuota, QuotaResponse } from "../server/quota.js";
-import { formatDuration, progressBar } from "../utils.js";
+import {
+  formatDuration,
+  padVisible,
+  progressBar,
+  truncateVisible,
+} from "../utils.js";
 
 const BOX_WIDTH = 68;
 const CONTENT_INDENT = 2;
@@ -72,12 +77,6 @@ function shortWindowLabel(label: string): string {
   }
 }
 
-function truncate(text: string, max: number): string {
-  if (text.length <= max) return text;
-  if (max <= 1) return text.slice(0, max);
-  return `${text.slice(0, max - 1)}…`;
-}
-
 function providerDisplayName(provider: ProviderQuota["provider"]): string {
   switch (provider) {
     case "codex":
@@ -120,17 +119,22 @@ function formatRefreshNotice(provider: ProviderQuota): string | undefined {
   return undefined;
 }
 
+const WINDOW_LABEL_WIDTH = 3;
+const WINDOW_BAR_WIDTH = 10;
+const WINDOW_PCT_WIDTH = 5;
+
 function formatWindowLine(
   w: ProviderQuota["windows"][number],
   dimmed = false,
 ): string {
-  const label = shortWindowLabel(w.label).padEnd(3);
+  const label = shortWindowLabel(w.label).padEnd(WINDOW_LABEL_WIDTH);
   const bar = dimmed
-    ? c(ANSI.dim, progressBar(w.usedPercent))
-    : colorBar(w.usedPercent);
+    ? c(ANSI.dim, progressBar(w.usedPercent, WINDOW_BAR_WIDTH))
+    : colorBar(w.usedPercent, WINDOW_BAR_WIDTH);
+  const pctText = formatPercent(w.usedPercent).padStart(WINDOW_PCT_WIDTH);
   const pct = dimmed
-    ? c(ANSI.dim, formatPercent(w.usedPercent))
-    : c(percentColor(w.usedPercent), formatPercent(w.usedPercent));
+    ? c(ANSI.dim, pctText)
+    : c(percentColor(w.usedPercent), pctText);
   let line = `${label} ${bar} ${pct}`;
 
   if (w.resetAfterSeconds != null && w.resetAfterSeconds > 0) {
@@ -146,9 +150,8 @@ function contentWidth(): number {
 
 function boxLine(text: string): string {
   const width = contentWidth();
-  const inner = BOX_WIDTH - 2;
-  const padded = truncate(text, width).padEnd(width);
-  return `│${" ".repeat(CONTENT_INDENT)}${padded}${" ".repeat(Math.max(0, inner - CONTENT_INDENT - width))}│`;
+  const content = padVisible(truncateVisible(text, width), width);
+  return `│${" ".repeat(CONTENT_INDENT)}${content}│`;
 }
 
 function emptyBoxLine(): string {
@@ -161,11 +164,10 @@ function providerBody(
   authToken?: string,
 ): string[] {
   const lines: string[] = [];
-  const width = contentWidth();
   const dimmed = provider.cached === true;
 
   if (provider.status === "not_connected") {
-    lines.push(c(ANSI.dim, truncate(provider.loginHint ?? "Not logged in", width)));
+    lines.push(c(ANSI.dim, provider.loginHint ?? "Not logged in"));
     return lines;
   }
 
@@ -174,17 +176,17 @@ function providerBody(
     authToken,
     options,
   )) {
-    lines.push(c(ANSI.dim, truncate(authLine, width)));
+    lines.push(c(ANSI.dim, authLine));
   }
 
   if (provider.status === "error" && provider.error) {
-    lines.push(c(ANSI.yellow, truncate(provider.error, width)));
+    lines.push(c(ANSI.yellow, provider.error));
   } else if (
     provider.status === "cooldown" &&
     provider.error &&
     !provider.cached
   ) {
-    lines.push(c(ANSI.yellow, truncate(provider.error, width)));
+    lines.push(c(ANSI.yellow, provider.error));
   }
 
   if (provider.windows.length === 0) {
@@ -195,7 +197,7 @@ function providerBody(
   }
 
   for (const w of provider.windows) {
-    lines.push(truncate(formatWindowLine(w, dimmed), width));
+    lines.push(formatWindowLine(w, dimmed));
   }
 
   if (provider.credits?.hasCredits || provider.credits?.balance) {
@@ -205,13 +207,11 @@ function providerBody(
         : provider.credits.balance != null
           ? `Credits: ${provider.credits.balance}`
           : "Credits: available";
-    lines.push(
-      c(dimmed ? ANSI.dim : ANSI.cyan, truncate(credits, width)),
-    );
+    lines.push(c(dimmed ? ANSI.dim : ANSI.cyan, credits));
   }
 
   for (const warning of provider.warnings) {
-    lines.push(c(ANSI.yellow, truncate(`⚠ ${warning}`, width)));
+    lines.push(c(ANSI.yellow, `⚠ ${warning}`));
   }
 
   return lines;
@@ -238,20 +238,19 @@ function minSecondsUntilRefresh(providers: ProviderQuota[]): number | undefined 
 }
 
 function topBorder(title: string): string {
+  const inner = BOX_WIDTH - 2;
   const label = `─ ${title} `;
-  const dashes = "─".repeat(Math.max(0, BOX_WIDTH - label.length));
+  const dashes = "─".repeat(Math.max(0, inner - label.length));
   return `┌${label}${dashes}┐`;
 }
 
 function bottomBorder(): string {
-  return `└${"─".repeat(BOX_WIDTH)}┘`;
+  return `└${"─".repeat(BOX_WIDTH - 2)}┘`;
 }
 
 function providerSeparator(): string {
-  const width = contentWidth();
-  const inner = BOX_WIDTH - 2;
-  const dashes = "─".repeat(width);
-  return `│${" ".repeat(CONTENT_INDENT)}${dashes}${" ".repeat(Math.max(0, inner - CONTENT_INDENT - width))}│`;
+  const dashes = "─".repeat(contentWidth());
+  return boxLine(dashes);
 }
 
 export function formatProviderStatusBlock(
