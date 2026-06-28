@@ -1,0 +1,264 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A100000100000001 /* CreditWatcherApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000001 /* CreditWatcherApp.swift */; };
+		A100000100000002 /* CLIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000002 /* CLIClient.swift */; };
+		A100000100000003 /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000003 /* PopoverView.swift */; };
+		A100000100000004 /* ProviderCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000004 /* ProviderCardView.swift */; };
+		A100000100000005 /* QuotaViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000005 /* QuotaViewModel.swift */; };
+		A100000100000006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A100000200000006 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A100000200000001 /* CreditWatcherApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditWatcherApp.swift; sourceTree = "<group>"; };
+		A100000200000002 /* CLIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLIClient.swift; sourceTree = "<group>"; };
+		A100000200000003 /* PopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverView.swift; sourceTree = "<group>"; };
+		A100000200000004 /* ProviderCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderCardView.swift; sourceTree = "<group>"; };
+		A100000200000005 /* QuotaViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaViewModel.swift; sourceTree = "<group>"; };
+		A100000200000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A100000200000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A100000300000001 /* CreditWatcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreditWatcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A100000400000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A100000500000001 = {
+			isa = PBXGroup;
+			children = (
+				A100000500000002 /* CreditWatcher */,
+				A100000500000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A100000500000002 /* CreditWatcher */ = {
+			isa = PBXGroup;
+			children = (
+				A100000200000001 /* CreditWatcherApp.swift */,
+				A100000200000002 /* CLIClient.swift */,
+				A100000200000003 /* PopoverView.swift */,
+				A100000200000004 /* ProviderCardView.swift */,
+				A100000200000005 /* QuotaViewModel.swift */,
+				A100000200000006 /* Assets.xcassets */,
+				A100000200000007 /* Info.plist */,
+			);
+			path = CreditWatcher;
+			sourceTree = "<group>";
+		};
+		A100000500000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A100000300000001 /* CreditWatcher.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A100000600000001 /* CreditWatcher */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A100000900000001 /* Build configuration list for PBXNativeTarget "CreditWatcher" */;
+			buildPhases = (
+				A100000700000001 /* Sources */,
+				A100000400000001 /* Frameworks */,
+				A100000800000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CreditWatcher;
+			productName = CreditWatcher;
+			productReference = A100000300000001 /* CreditWatcher.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A100000A00000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A100000600000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A100000900000002 /* Build configuration list for PBXProject "CreditWatcher" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A100000500000001;
+			productRefGroup = A100000500000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A100000600000001 /* CreditWatcher */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A100000800000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000100000006 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A100000700000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000100000001 /* CreditWatcherApp.swift in Sources */,
+				A100000100000002 /* CLIClient.swift in Sources */,
+				A100000100000003 /* PopoverView.swift in Sources */,
+				A100000100000004 /* ProviderCardView.swift in Sources */,
+				A100000100000005 /* QuotaViewModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A100000B00000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A100000B00000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		A100000B00000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CreditWatcher/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.creditwatcher.menubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A100000B00000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CreditWatcher/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.creditwatcher.menubar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A100000900000001 /* Build configuration list for PBXNativeTarget "CreditWatcher" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000B00000003 /* Debug */,
+				A100000B00000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A100000900000002 /* Build configuration list for PBXProject "CreditWatcher" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000B00000001 /* Debug */,
+				A100000B00000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A100000A00000001 /* Project object */;
+}

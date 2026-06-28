@@ -2,6 +2,7 @@
 
 import { dashboardCommand } from "./commands/dashboard.js";
 import { loginClaude, loginCodex, loginCursor } from "./commands/login.js";
+import { quotaCommand } from "./commands/quota.js";
 import { serveCommand } from "./commands/serve.js";
 import {
   statusAll,
@@ -70,6 +71,8 @@ Usage:
   creditwatcher status codex     Show Codex usage limits
   creditwatcher status claude    Show Claude usage limits
   creditwatcher status cursor    Show Cursor usage limits
+  creditwatcher quota --json       Machine-readable quota (menu bar app)
+  creditwatcher quota --force      Bypass 60s usage check cooldown
   creditwatcher dashboard        Rich terminal dashboard (all providers)
   creditwatcher dashboard --force  Bypass 60s usage check cooldown
   creditwatcher dashboard --verbose  Show auth source paths
@@ -98,6 +101,7 @@ Safety:
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const force = args.includes("--force");
+  const json = args.includes("--json");
   const verbose = args.includes("--verbose");
   const showToken = args.includes("--show-token");
   const displayOptions = { verbose, showToken };
@@ -155,6 +159,15 @@ async function main(): Promise<void> {
           process.exitCode = 1;
         }
         break;
+
+      case "quota": {
+        const quotaArgs = args.filter((a) => !a.startsWith("-") && a !== "quota");
+        if (quotaArgs.length > 0) {
+          console.error(`Ignoring extra argument(s): ${quotaArgs.join(", ")}`);
+        }
+        await quotaCommand({ force, json });
+        break;
+      }
 
       case "dashboard": {
         const dashArgs = args.filter((a) => !a.startsWith("-") && a !== "dashboard");

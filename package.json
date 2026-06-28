@@ -18,6 +18,7 @@
     "status:claude": "tsx src/cli.ts status claude",
     "status:cursor": "tsx src/cli.ts status cursor",
     "dashboard": "tsx src/cli.ts dashboard",
+    "quota": "tsx src/cli.ts quota --json",
     "serve": "tsx src/cli.ts serve"
   },
   "engines": {

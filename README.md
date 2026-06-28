@@ -49,6 +49,8 @@ npx creditwatcher status codex
 | `creditwatcher status cursor` | Show Cursor plan usage (included / on-demand) |
 | `creditwatcher dashboard` | Rich terminal dashboard — Codex, Claude, and Cursor |
 | `creditwatcher dashboard --force` | Skip the 60-second usage cooldown |
+| `creditwatcher quota --json` | Machine-readable quota JSON (menu bar app) |
+| `creditwatcher quota --force` | Skip cooldown for JSON output |
 | `creditwatcher status` | Show all providers with credentials configured |
 | `creditwatcher status --force` | Skip the 60-second usage cooldown |
 | `creditwatcher serve` | Optional local web UI at http://127.0.0.1:9477 |
@@ -66,6 +68,73 @@ npm run dashboard
 ```
 
 Shows Codex, Claude, and Cursor: plan name, auth source, usage windows, reset countdown, and billing cycle (Cursor). Color coding: green below 70%, yellow 70–90%, red above 90%.
+
+## macOS menu bar app
+
+Native menu bar app (Stats-inspired) that shells out to the CLI — no direct API calls from Swift.
+
+### Prerequisites
+
+1. Build and link the CLI so `creditwatcher` is on your PATH:
+
+```bash
+npm install
+npm run build
+npm link
+```
+
+2. macOS 14+ (Sonoma) and Xcode 15+
+
+### Build
+
+```bash
+open macos/CreditWatcher.xcodeproj
+# Product → Run (⌘R)
+```
+
+Or from the command line:
+
+```bash
+cd macos
+xcodebuild -project CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Release build
+```
+
+The built app is at `macos/build/Release/CreditWatcher.app` (or under `~/Library/Developer/Xcode/DerivedData/` when building from Xcode).
+
+### Run
+
+1. Launch **CreditWatcher** from Xcode or open the built `.app`
+2. A gauge icon appears in the menu bar (no Dock icon — `LSUIElement`)
+3. Click the icon to open a popover with Codex, Claude, and Cursor usage cards
+4. Icon tint reflects worst-case usage: green &lt;70%, yellow 70–90%, red &gt;90%
+
+**Refresh:** opens popover → auto-refresh; **Refresh** button forces `--force` (bypasses 60s cooldown). Background refresh every 60 seconds.
+
+**CLI button:** opens Terminal with `creditwatcher dashboard --verbose`.
+
+### CLI resolution
+
+The app finds `creditwatcher` in this order:
+
+1. `CREDITWATCHER_CLI_PATH` environment variable (path to binary or `cli.js`)
+2. Bundled copy in app Resources (if added)
+3. `creditwatcher` on PATH (`/usr/local/bin`, `/opt/homebrew/bin`)
+4. Dev fallback: `dist/cli.js` relative to the repo (via `node`)
+
+### Launch at login
+
+**System Settings:** General → Login Items → add CreditWatcher.
+
+**Programmatic (SMAppService):** register the app bundle with `SMAppService.mainApp` in a future release; for now use Login Items.
+
+### JSON API
+
+```bash
+creditwatcher quota --json
+# or: npm run quota
+```
+
+Returns provider cards without auth paths (safe for the menu bar UI).
 
 ### Optional web UI
 
