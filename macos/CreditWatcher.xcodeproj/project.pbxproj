@@ -13,6 +13,8 @@
 		A100000100000004 /* ProviderCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000004 /* ProviderCardView.swift */; };
 		A100000100000005 /* QuotaViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000005 /* QuotaViewModel.swift */; };
 		A100000100000006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A100000200000006 /* Assets.xcassets */; };
+		A100000100000007 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000009 /* AppLogger.swift */; };
+		A100000100000008 /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000010 /* MenuBarController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +26,8 @@
 		A100000200000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A100000200000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A100000200000008 /* CreditWatcher.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CreditWatcher.entitlements; sourceTree = "<group>"; };
+		A100000200000009 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		A100000200000010 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
 		A100000300000001 /* CreditWatcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreditWatcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -50,6 +54,8 @@
 			isa = PBXGroup;
 			children = (
 				A100000200000001 /* CreditWatcherApp.swift */,
+				A100000200000009 /* AppLogger.swift */,
+				A100000200000010 /* MenuBarController.swift */,
 				A100000200000002 /* CLIClient.swift */,
 				A100000200000003 /* PopoverView.swift */,
 				A100000200000004 /* ProviderCardView.swift */,
@@ -160,6 +166,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A100000100000001 /* CreditWatcherApp.swift in Sources */,
+				A100000100000007 /* AppLogger.swift in Sources */,
+				A100000100000008 /* MenuBarController.swift in Sources */,
 				A100000100000002 /* CLIClient.swift in Sources */,
 				A100000100000003 /* PopoverView.swift in Sources */,
 				A100000100000004 /* ProviderCardView.swift in Sources */,

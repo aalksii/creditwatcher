@@ -91,8 +91,25 @@ final class CLIClient {
 
     func fetchQuota(force: Bool = false) async throws -> QuotaResponse {
         let (executable, arguments) = try resolveCLI(force: force)
+        AppLogger.info("CLI path: \(executable) \(arguments.joined(separator: " "))")
         let output = try await runProcess(executable: executable, arguments: arguments)
-        return try parseQuota(from: output)
+        let response = try parseQuota(from: output)
+        AppLogger.info("Quota result: \(response.providers.count) providers, worst \(response.worstUsedPercent)%")
+        return response
+    }
+
+    /// Logs resolved CLI path without running it (for launch diagnostics).
+    func logResolvedCLIPath() {
+        do {
+            let (executable, arguments) = try resolveCLI(force: false)
+            AppLogger.info("Resolved CLI: \(executable) \(arguments.joined(separator: " "))")
+        } catch {
+            AppLogger.error("CLI resolution failed: \(error.localizedDescription)")
+        }
+    }
+
+    private static func userHome() -> String {
+        FileManager.default.homeDirectoryForCurrentUser.path
     }
 
     private func resolveCLI(force: Bool) throws -> (String, [String]) {
@@ -147,17 +164,17 @@ final class CLIClient {
 
     private func devCLIPaths() -> [String] {
         let bundlePath = Bundle.main.bundlePath
+        let home = Self.userHome()
         let candidates = [
             bundlePath + "/../../../dist/cli.js",
             bundlePath + "/../../../../dist/cli.js",
-            FileManager.default.currentDirectoryPath + "/dist/cli.js",
-            NSHomeDirectory() + "/git/creditwatcher/dist/cli.js",
+            home + "/git/creditwatcher/dist/cli.js",
         ]
         return candidates.map { NSString(string: $0).standardizingPath as String }
     }
 
     private func resolveNode() -> String? {
-        let home = NSHomeDirectory()
+        let home = Self.userHome()
         var candidates = [
             "/opt/homebrew/bin/node",
             "/usr/local/bin/node",
@@ -188,7 +205,7 @@ final class CLIClient {
     }
 
     private func augmentedPATH() -> String {
-        let home = NSHomeDirectory()
+        let home = Self.userHome()
         let extras = [
             "/opt/homebrew/bin",
             "/usr/local/bin",
@@ -250,6 +267,10 @@ final class CLIClient {
                     let errData = stderr.fileHandleForReading.readDataToEndOfFile()
                     let out = String(data: outData, encoding: .utf8) ?? ""
                     let err = String(data: errData, encoding: .utf8) ?? ""
+
+                    if !err.isEmpty {
+                        AppLogger.info("CLI stderr: \(err.trimmingCharacters(in: .whitespacesAndNewlines))")
+                    }
 
                     if process.terminationStatus != 0 {
                         let message = err.isEmpty ? out : err

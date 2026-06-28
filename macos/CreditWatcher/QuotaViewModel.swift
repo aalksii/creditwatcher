@@ -11,6 +11,7 @@ final class QuotaViewModel: ObservableObject {
     private var backgroundTask: Task<Void, Never>?
 
     init() {
+        CLIClient.shared.logResolvedCLIPath()
         startBackgroundRefresh()
     }
 
@@ -45,10 +46,12 @@ final class QuotaViewModel: ObservableObject {
             if !Task.isCancelled {
                 errorMessage = error.localizedDescription
                 errorHint = error.recoverySuggestion
+                AppLogger.error("Quota load failed: \(error.localizedDescription)")
             }
         } catch {
             if !Task.isCancelled {
                 errorMessage = error.localizedDescription
+                AppLogger.error("Quota load failed: \(error.localizedDescription)")
             }
         }
     }
