@@ -20,7 +20,9 @@ Then run e.g. `creditwatcher status codex`.
 npm install
 npm run status          # all providers (uses tsx)
 npm run status:codex    # Codex only
-npm run login           # Codex OAuth → ~/.creditwatcher/auth.json
+npm run status:claude   # Claude only
+npm run login           # show login help
+npm run login:codex     # Codex OAuth → ~/.creditwatcher/auth.json
 npm run login:claude    # import Claude Code credentials
 ```
 
@@ -52,11 +54,12 @@ claude
 creditwatcher status claude
 ```
 
-creditwatcher reads Claude OAuth tokens from (in order):
+creditwatcher reads Claude OAuth tokens from (in order, freshest token wins on auth failure):
 
-1. macOS Keychain (`Claude Code-credentials`)
-2. `~/.claude/.credentials.json`
-3. `~/.creditwatcher/claude-auth.json` (import copy)
+1. `CLAUDE_CODE_OAUTH_TOKEN` environment variable
+2. macOS Keychain (`Claude Code-credentials-<hash>` or legacy `Claude Code-credentials`)
+3. `~/.claude/.credentials.json`
+4. `~/.creditwatcher/claude-auth.json` (import copy)
 
 **Optional import copy:**
 
@@ -70,9 +73,10 @@ This copies tokens into `~/.creditwatcher/claude-auth.json` (mode 0600) without 
 
 - **Read-only** `GET https://api.anthropic.com/api/oauth/usage` only
 - Direct calls to `api.anthropic.com` only — no third-party relay
-- **Never** refresh or rewrite Claude Code's Keychain / `~/.claude/.credentials.json` (avoids desyncing the official CLI)
+- Refreshes expired tokens via `POST https://platform.claude.com/v1/oauth/token` and saves rotated tokens to `~/.creditwatcher/claude-auth.json` only (never writes Claude Code's Keychain or `~/.claude/.credentials.json`)
 - On-demand checks with a **60-second cooldown** (separate from Codex)
 - Required headers: `Authorization`, `anthropic-beta: oauth-2025-04-20`, `User-Agent: claude-code/...`
+- **OAuth scope:** `/api/oauth/usage` requires `user:profile` in the token scopes. Tokens with only `user:inference` return 401/403.
 - Anthropic restricts consumer OAuth in third-party tools — **use at your own risk**
 
 ## Setup

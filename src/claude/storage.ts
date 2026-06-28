@@ -1,6 +1,7 @@
 import { readFile, mkdir, writeFile, chmod, rename } from "node:fs/promises";
 import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
+import { jwtExpiration } from "../utils.js";
 import { readClaudeKeychainCredentials } from "./keychain.js";
 
 const CREDITWATCHER_DIR = join(homedir(), ".creditwatcher");
@@ -22,6 +23,7 @@ export interface ClaudeCredentials {
   refreshToken: string;
   expiresAt?: Date;
   subscriptionType?: string;
+  scopes?: string[];
   sourcePath: string;
   /** True when loaded from Claude Code's own store (do not write back). */
   managedByClaudeCode: boolean;
@@ -41,6 +43,13 @@ function parseExpiresAt(value?: number): Date | undefined {
   if (value == null) return undefined;
   if (value > 1e12) return new Date(value);
   return new Date(value * 1000);
+}
+
+function credentialExpiryMs(creds: ClaudeCredentials): number {
+  const jwtExp = jwtExpiration(creds.accessToken);
+  if (jwtExp) return jwtExp.getTime();
+  if (creds.expiresAt) return creds.expiresAt.getTime();
+  return 0;
 }
 
 function parseCredentialsJson(
@@ -65,6 +74,7 @@ function parseCredentialsJson(
     refreshToken: oauth.refreshToken ?? "",
     expiresAt: parseExpiresAt(oauth.expiresAt),
     subscriptionType: oauth.subscriptionType,
+    scopes: oauth.scopes,
     sourcePath,
     managedByClaudeCode,
   };
@@ -82,41 +92,70 @@ async function tryLoadFile(path: string, managedByClaudeCode: boolean) {
   }
 }
 
-export async function loadClaudeCredentials(): Promise<ClaudeCredentials | null> {
-  const keychainRaw = await readClaudeKeychainCredentials();
-  if (keychainRaw) {
-    const fromKeychain = parseCredentialsJson(
-      keychainRaw,
-      `macOS Keychain (Claude Code-credentials, ${userInfo().username})`,
+function sortCandidates(candidates: ClaudeCredentials[]): ClaudeCredentials[] {
+  return [...candidates].sort((a, b) => {
+    const diff = credentialExpiryMs(b) - credentialExpiryMs(a);
+    if (diff !== 0) return diff;
+    if (a.managedByClaudeCode !== b.managedByClaudeCode) {
+      return a.managedByClaudeCode ? -1 : 1;
+    }
+    return a.sourcePath.localeCompare(b.sourcePath);
+  });
+}
+
+export async function loadClaudeCredentialCandidates(): Promise<
+  ClaudeCredentials[]
+> {
+  const candidates: ClaudeCredentials[] = [];
+
+  const envToken = process.env.CLAUDE_CODE_OAUTH_TOKEN?.trim();
+  if (envToken) {
+    const fromEnv = parseCredentialsJson(
+      JSON.stringify({ claudeAiOauth: { accessToken: envToken } }),
+      "CLAUDE_CODE_OAUTH_TOKEN environment variable",
       true,
     );
-    if (fromKeychain) return fromKeychain;
+    if (fromEnv) candidates.push(fromEnv);
+  }
+
+  const keychain = await readClaudeKeychainCredentials();
+  if (keychain) {
+    const fromKeychain = parseCredentialsJson(
+      keychain.raw,
+      `macOS Keychain (${keychain.service}, ${userInfo().username})`,
+      true,
+    );
+    if (fromKeychain) candidates.push(fromKeychain);
   }
 
   const claudePath = claudeCredentialsPath();
   const fromClaude = await tryLoadFile(claudePath, true);
-  if (fromClaude) return fromClaude;
+  if (fromClaude) candidates.push(fromClaude);
 
-  return tryLoadFile(creditwatcherClaudeAuthPath(), false);
+  const fromCopy = await tryLoadFile(creditwatcherClaudeAuthPath(), false);
+  if (fromCopy) candidates.push(fromCopy);
+
+  return sortCandidates(candidates);
 }
 
-export async function importClaudeCredentials(): Promise<ClaudeCredentials> {
-  const existing = await loadClaudeCredentials();
-  if (!existing) {
-    throw new Error(
-      "No Claude Code credentials found. Run `claude` and sign in first, then retry.",
-    );
-  }
+export async function loadClaudeCredentials(): Promise<ClaudeCredentials | null> {
+  const candidates = await loadClaudeCredentialCandidates();
+  return candidates[0] ?? null;
+}
 
+export async function saveClaudeCredentialsCopy(
+  creds: ClaudeCredentials,
+): Promise<ClaudeCredentials> {
   const dest = creditwatcherClaudeAuthPath();
   const dir = dirname(dest);
   await mkdir(dir, { recursive: true, mode: 0o700 });
 
   const oauth = {
-    accessToken: existing.accessToken,
-    refreshToken: existing.refreshToken,
-    expiresAt: existing.expiresAt?.getTime(),
-    subscriptionType: existing.subscriptionType,
+    accessToken: creds.accessToken,
+    refreshToken: creds.refreshToken,
+    expiresAt: creds.expiresAt?.getTime(),
+    subscriptionType: creds.subscriptionType,
+    scopes: creds.scopes,
   };
 
   const body = JSON.stringify({ claudeAiOauth: oauth }, null, 2);
@@ -127,8 +166,26 @@ export async function importClaudeCredentials(): Promise<ClaudeCredentials> {
   await chmod(dest, 0o600);
 
   return {
-    ...existing,
+    ...creds,
     sourcePath: dest,
     managedByClaudeCode: false,
   };
+}
+
+export async function importClaudeCredentials(): Promise<ClaudeCredentials> {
+  const existing = await loadClaudeCredentials();
+  if (!existing) {
+    throw new Error(
+      "No Claude Code credentials found. Run `claude` and sign in first, then retry.",
+    );
+  }
+
+  return saveClaudeCredentialsCopy(existing);
+}
+
+export function claudeCredentialsMissingProfileScope(
+  creds: ClaudeCredentials,
+): boolean {
+  if (!creds.scopes?.length) return false;
+  return !creds.scopes.includes("user:profile");
 }

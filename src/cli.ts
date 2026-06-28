@@ -3,6 +3,30 @@
 import { loginClaude, loginCodex } from "./commands/login.js";
 import { statusAll, statusClaude, statusCodex } from "./commands/status.js";
 
+function printLoginHelp(): void {
+  console.log(`Usage:
+  creditwatcher login codex      OAuth login (stores ~/.creditwatcher/auth.json)
+  creditwatcher login claude     Import Claude Code credentials (Keychain or ~/.claude/.credentials.json)
+
+npm scripts:
+  npm run login:codex            Same as login codex
+  npm run login:claude           Same as login claude
+  npm run login                  Show this help`);
+}
+
+function printStatusHelp(): void {
+  console.log(`Usage:
+  creditwatcher status           Show all configured providers
+  creditwatcher status codex     Show Codex usage limits
+  creditwatcher status claude    Show Claude usage limits
+  creditwatcher status --force   Bypass 60s usage check cooldown
+
+npm scripts:
+  npm run status                 Same as status
+  npm run status:codex           Same as status codex
+  npm run status:claude          Same as status claude`);
+}
+
 function printHelp(): void {
   console.log(`creditwatcher — check Codex and Claude usage limits safely
 
@@ -35,19 +59,29 @@ async function main(): Promise<void> {
     return;
   }
 
-  const [command, provider] = positional;
+  const [command, provider, ...extra] = positional;
+
+  if (extra.length > 0) {
+    console.error(
+      `Ignoring extra argument(s): ${extra.join(", ")}. Use npm run login:claude or creditwatcher login claude (not npm run login claude with the old codex script).`,
+    );
+  }
 
   try {
     switch (command) {
       case "login":
-        if (provider === "codex") {
+        if (!provider) {
+          printLoginHelp();
+          process.exitCode = 1;
+        } else if (provider === "codex") {
           await loginCodex();
         } else if (provider === "claude") {
           await loginClaude();
         } else {
           console.error(
-            `Unknown provider: ${provider ?? "(none)"}. Use: login codex | login claude`,
+            `Unknown provider: ${provider}. Use: login codex | login claude`,
           );
+          printLoginHelp();
           process.exitCode = 1;
         }
         break;
@@ -63,6 +97,7 @@ async function main(): Promise<void> {
           if (!ok) process.exitCode = 1;
         } else {
           console.error(`Unknown provider: ${provider}`);
+          printStatusHelp();
           process.exitCode = 1;
         }
         break;

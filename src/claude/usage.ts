@@ -8,14 +8,18 @@ import {
   CLAUDE_USAGE_URL,
   CLAUDE_USER_AGENT,
 } from "./constants.js";
+import {
+  ClaudeAuthError,
+  ensureFreshClaudeCredentials,
+  refreshClaudeAccessToken,
+} from "./refresh.js";
 import type { ClaudeCredentials } from "./storage.js";
-import { loadClaudeCredentials } from "./storage.js";
+import {
+  claudeCredentialsMissingProfileScope,
+  loadClaudeCredentialCandidates,
+} from "./storage.js";
 
 const CACHE_FILE = join(homedir(), ".creditwatcher", "usage-cache-claude.json");
-
-interface UsageCache {
-  fetchedAt: number;
-}
 
 export interface ClaudeQuotaWindow {
   key: string;
@@ -51,10 +55,10 @@ const LABELS: Record<string, string> = {
   seven_day_opus: "7-day Opus",
 };
 
-async function readCache(): Promise<UsageCache | null> {
+async function readCache(): Promise<{ fetchedAt: number } | null> {
   try {
     const raw = await readFile(CACHE_FILE, "utf8");
-    return JSON.parse(raw) as UsageCache;
+    return JSON.parse(raw) as { fetchedAt: number };
   } catch {
     return null;
   }
@@ -111,6 +115,84 @@ export function snapshotFromResponse(
   return { subscriptionType, windows };
 }
 
+async function requestClaudeUsage(
+  accessToken: string,
+): Promise<ClaudeUsageResponse> {
+  const res = await fetch(CLAUDE_USAGE_URL, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "anthropic-beta": CLAUDE_OAUTH_BETA,
+      "User-Agent": CLAUDE_USER_AGENT,
+    },
+  });
+
+  const body = await res.text();
+  if (!res.ok) {
+    const err = new Error(
+      `Claude usage request failed (${res.status}): ${body.slice(0, 200)}`,
+    ) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
+  }
+
+  try {
+    return JSON.parse(body) as ClaudeUsageResponse;
+  } catch {
+    throw new Error("Claude usage endpoint returned invalid JSON");
+  }
+}
+
+function isAuthFailure(err: unknown): boolean {
+  if (err instanceof ClaudeAuthError) return true;
+  const status = (err as { status?: number }).status;
+  return status === 401 || status === 403;
+}
+
+async function fetchUsageWithCredential(
+  creds: ClaudeCredentials,
+): Promise<{ snapshot: ClaudeUsageSnapshot; sourcePath: string }> {
+  if (claudeCredentialsMissingProfileScope(creds)) {
+    throw new Error(
+      "Claude OAuth token lacks user:profile scope required for /api/oauth/usage. Run `claude` to sign in again.",
+    );
+  }
+
+  let active = await ensureFreshClaudeCredentials(creds);
+
+  try {
+    const data = await requestClaudeUsage(active.accessToken);
+    return {
+      snapshot: snapshotFromResponse(data, active.subscriptionType),
+      sourcePath: active.sourcePath,
+    };
+  } catch (err) {
+    if (!isAuthFailure(err) || !active.refreshToken) {
+      throw err;
+    }
+  }
+
+  const refreshed = await refreshClaudeAccessToken(active.refreshToken);
+  active = {
+    ...active,
+    accessToken: refreshed.accessToken,
+    refreshToken: refreshed.refreshToken,
+    expiresAt: refreshed.expiresAt ?? active.expiresAt,
+    managedByClaudeCode: false,
+  };
+
+  const { saveClaudeCredentialsCopy } = await import("./storage.js");
+  active = await saveClaudeCredentialsCopy(active);
+
+  const data = await requestClaudeUsage(active.accessToken);
+  return {
+    snapshot: snapshotFromResponse(data, active.subscriptionType),
+    sourcePath: active.sourcePath,
+  };
+}
+
 export async function fetchClaudeUsage(options: {
   force?: boolean;
 } = {}): Promise<{ snapshot: ClaudeUsageSnapshot; sourcePath: string }> {
@@ -127,50 +209,46 @@ export async function fetchClaudeUsage(options: {
     }
   }
 
-  const creds = await loadClaudeCredentials();
-  if (!creds) {
+  const candidates = await loadClaudeCredentialCandidates();
+  if (candidates.length === 0) {
     throw new Error("Not logged in to Claude Code");
   }
 
-  if (
-    !creds.managedByClaudeCode &&
-    creds.expiresAt &&
-    creds.expiresAt.getTime() <= Date.now()
-  ) {
-    throw new Error(
-      "Claude OAuth token expired. Run `claude` to sign in again, then `creditwatcher login claude`.",
-    );
+  let lastAuthError: Error | null = null;
+
+  for (const candidate of candidates) {
+    try {
+      const result = await fetchUsageWithCredential(candidate);
+      await writeCache();
+      return result;
+    } catch (err) {
+      if (
+        err instanceof ClaudeAuthError &&
+        err.allowsSourceFallback
+      ) {
+        lastAuthError = err;
+        continue;
+      }
+
+      const status = (err as { status?: number }).status;
+      if (status === 401 || status === 403) {
+        lastAuthError =
+          err instanceof Error
+            ? err
+            : new Error("Claude authentication failed");
+        continue;
+      }
+
+      throw err;
+    }
   }
 
-  const res = await fetch(CLAUDE_USAGE_URL, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${creds.accessToken}`,
-      Accept: "application/json",
-      "anthropic-beta": CLAUDE_OAUTH_BETA,
-      "User-Agent": CLAUDE_USER_AGENT,
-    },
-  });
-
-  const body = await res.text();
-  if (!res.ok) {
-    throw new Error(
-      `Claude usage request failed (${res.status}): ${body.slice(0, 200)}`,
-    );
-  }
-
-  let data: ClaudeUsageResponse;
-  try {
-    data = JSON.parse(body) as ClaudeUsageResponse;
-  } catch {
-    throw new Error("Claude usage endpoint returned invalid JSON");
-  }
-
-  await writeCache();
-  return {
-    snapshot: snapshotFromResponse(data, creds.subscriptionType),
-    sourcePath: creds.sourcePath,
-  };
+  throw (
+    lastAuthError ??
+    new Error(
+      "Claude authentication failed for all credential sources. Run `claude` to sign in again.",
+    )
+  );
 }
 
 export function formatClaudeUsageOutput(
