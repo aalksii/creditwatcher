@@ -2,11 +2,33 @@
 
 A minimal CLI to check **Codex** and **Claude Code** subscription usage limits safely.
 
+## Install
+
+**Global CLI** (so `creditwatcher` is on your PATH):
+
 ```bash
 npm install
-npm run status          # check all configured providers
+npm run build
+npm link
+```
+
+Then run e.g. `creditwatcher status codex`.
+
+**Without linking** (from a clone):
+
+```bash
+npm install
+npm run status          # all providers (uses tsx)
+npm run status:codex    # Codex only
 npm run login           # Codex OAuth → ~/.creditwatcher/auth.json
 npm run login:claude    # import Claude Code credentials
+```
+
+**One-off** (if published or with `bin` set locally after build):
+
+```bash
+npm install && npm run build
+npx creditwatcher status codex
 ```
 
 ## Commands
