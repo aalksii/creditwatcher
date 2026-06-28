@@ -11,7 +11,7 @@ final class QuotaViewModel: ObservableObject {
     private var backgroundTask: Task<Void, Never>?
 
     init() {
-        CLIClient.shared.logResolvedCLIPath()
+        AppLogger.info("Native quota service ready")
         startBackgroundRefresh()
     }
 
@@ -37,29 +37,26 @@ final class QuotaViewModel: ObservableObject {
         errorHint = nil
         defer { isLoading = false }
 
-        do {
-            let response = try await CLIClient.shared.fetchQuota(force: force)
-            if !Task.isCancelled {
-                quota = response
+        let response = await NativeQuotaService.fetchQuota(force: force)
+        if !Task.isCancelled {
+            quota = response
+            let errors = response.providers.compactMap { p -> String? in
+                guard p.status == "error", let err = p.error else { return nil }
+                return "\(p.displayName): \(err)"
             }
-        } catch let error as CLIClientError {
-            if !Task.isCancelled {
-                errorMessage = error.localizedDescription
-                errorHint = error.recoverySuggestion
-                AppLogger.error("Quota load failed: \(error.localizedDescription)")
+            if errors.isEmpty {
+                errorMessage = nil
+            } else {
+                errorMessage = errors.joined(separator: "\n")
             }
-        } catch {
-            if !Task.isCancelled {
-                errorMessage = error.localizedDescription
-                AppLogger.error("Quota load failed: \(error.localizedDescription)")
-            }
+            AppLogger.info("Quota loaded: \(response.providers.count) providers")
         }
     }
 
     private func startBackgroundRefresh() {
         backgroundTask = Task {
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(CLIClient.shared.recommendedRefreshInterval * 1_000_000_000))
+                try? await Task.sleep(nanoseconds: UInt64(NativeQuotaService.refreshCooldown * 1_000_000_000))
                 if !Task.isCancelled {
                     await load(force: false)
                 }

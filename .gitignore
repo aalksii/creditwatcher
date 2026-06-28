@@ -8,3 +8,5 @@ claude-auth.json
 *.credentials.json
 .creditwatcher/
 .auth.json.*
+xcuserdata
+*.xcuserstate

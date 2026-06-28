@@ -71,19 +71,13 @@ Shows Codex, Claude, and Cursor: plan name, auth source, usage windows, reset co
 
 ## macOS menu bar app
 
-Native menu bar app (Stats-inspired) that shells out to the CLI — no direct API calls from Swift.
+Native Swift menu bar app (Stats-inspired). **No Node.js required** — the app reads credentials locally and calls provider usage APIs directly via `URLSession`.
 
 ### Prerequisites
 
-1. Build the CLI (bundled into the app at build time):
-
-```bash
-npm install
-npm run build
-```
-
-2. Node.js 18+ on your Mac (Homebrew, nvm, or fnm — the app discovers common install paths)
-3. macOS 14+ (Sonoma) and Xcode 15+
+- macOS 14+ (Sonoma)
+- Xcode 15+
+- Existing logins: `codex login`, `claude`, and/or Cursor.app signed in
 
 ### Build
 
@@ -99,8 +93,6 @@ cd macos
 xcodebuild -project CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Debug build
 ```
 
-The build copies `dist/` into the app bundle (`Contents/Resources/cli/`). If `dist/cli.js` is missing, the **Bundle CLI** build phase runs `npm run build` automatically.
-
 The built app is at `~/Library/Developer/Xcode/DerivedData/.../Build/Products/Debug/CreditWatcher.app` when building from Xcode.
 
 ### Run
@@ -110,57 +102,43 @@ The built app is at `~/Library/Developer/Xcode/DerivedData/.../Build/Products/De
 3. Click the icon to open a popover with Codex, Claude, and Cursor usage cards
 4. Icon tint reflects worst-case usage: green &lt;70%, yellow 70–90%, red &gt;90%
 
-If the popover shows an error card instead of data, see **CLI resolution** below.
+**Refresh:** auto-refresh on open; **Refresh** button bypasses the 60s cooldown. Background refresh every 60 seconds.
 
-**Refresh:** opens popover → auto-refresh; **Refresh** button forces `--force` (bypasses 60s cooldown). Background refresh every 60 seconds.
+**CLI button:** opens Terminal with `creditwatcher dashboard --verbose` (optional — uses the separate Node CLI).
 
-**CLI button:** opens Terminal with `creditwatcher dashboard --verbose`.
+### Native architecture
+
+```
+CreditWatcher.app (Swift)
+├── CodexProvider    → ~/.codex/auth.json + GET /wham/usage
+├── ClaudeProvider   → Keychain / ~/.claude + GET /api/oauth/usage
+└── CursorProvider   → Cursor state.vscdb + GET cursor.com/api/usage-summary
+```
+
+Shares disk cache with the CLI at `~/.creditwatcher/quota-cache-*.json`.
 
 ### Troubleshooting
 
 **No gauge icon in the menu bar**
 
-The app uses `NSStatusItem` (not SwiftUI `MenuBarExtra`) and sets `NSApp.setActivationPolicy(.accessory)` at launch. If the icon is still missing:
-
 1. **Check Console.app** — filter for `CreditWatcher`. You should see:
    - `App started`
-   - `Activation policy set to .accessory`
+   - `Native quota service ready`
    - `Menu bar item created`
-   - `Launch complete — menu bar should be visible`
-2. **Quit duplicate instances** — `pkill CreditWatcher` then relaunch from Xcode (⌘R) or open the `.app` once.
-3. **Menu bar overflow** — macOS may hide icons when the menu bar is full. Hold ⌘ and drag other icons away, or disable "Automatically hide and show the menu bar" temporarily.
-4. **Rebuild** — `cd macos && xcodebuild -project CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Debug build`
+2. **Quit duplicate instances** — `pkill CreditWatcher` then relaunch.
+3. **Menu bar overflow** — hold ⌘ and drag other icons aside.
 
-**`FSFindFolder failed with error=-43` in Console**
+**Popover shows "not connected"**
 
-Harmless in most cases — macOS logs this when a GUI app has no working directory. The app no longer uses `FileManager.default.currentDirectoryPath` (which triggered this). Home paths use `FileManager.default.homeDirectoryForCurrentUser` instead.
+Sign in with the official tools first (`codex login`, `claude`, Cursor.app).
 
-**Popover shows an error instead of usage data**
+**Popover shows authentication error**
 
-See **CLI resolution** below. Console will log `CLI path: …` and `Quota result: …` or `Quota load failed: …`.
-
-**Icon visible but popover empty**
-
-Click the gauge icon once and wait a few seconds (Node subprocess). Check Console for `CLI stderr:` lines.
-
-### CLI resolution
-
-The app runs `node …/Resources/cli/cli.js quota --json`. Resolution order:
-
-1. `CREDITWATCHER_CLI_PATH` — override in Xcode scheme (Edit Scheme → Run → Arguments → Environment Variables). Use a path to the `creditwatcher` binary or to `cli.js`.
-2. **Bundled CLI** in `CreditWatcher.app/Contents/Resources/cli/` (copied from `dist/` at build time)
-3. `creditwatcher` on PATH (Homebrew, nvm, etc.)
-4. Dev fallback: `~/git/creditwatcher/dist/cli.js`
-
-**Node** is resolved via Homebrew (`/opt/homebrew/bin/node`), nvm, fnm, and `/usr/local/bin/node` — Xcode does not inherit your shell PATH, so the app does not rely on `which creditwatcher` alone.
-
-**Running from Xcode:** no `npm link` required if the **Bundle CLI** build phase succeeds. Ensure Node is installed. Optional: set `CREDITWATCHER_CLI_PATH` to your local `dist/cli.js` for faster iteration without rebuilding the bundle.
+Re-login with the official CLI for that provider. Claude tokens refresh automatically when possible.
 
 ### Launch at login
 
 **System Settings:** General → Login Items → add CreditWatcher.
-
-**Programmatic (SMAppService):** register the app bundle with `SMAppService.mainApp` in a future release; for now use Login Items.
 
 ### JSON API
 
