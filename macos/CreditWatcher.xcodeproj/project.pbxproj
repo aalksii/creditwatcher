@@ -149,14 +149,16 @@
 			);
 			inputPaths = (
 				"$(SRCROOT)/../dist/cli.js",
+				"$(SRCROOT)/../package.json",
 			);
 			name = "Bundle CLI";
 			outputPaths = (
 				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/cli/cli.js",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/cli/package.json",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\nREPO_ROOT=\"${SRCROOT}/..\"\nCLI_DEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/cli\"\n\nif [ ! -f \"${REPO_ROOT}/dist/cli.js\" ]; then\n  echo \"Building creditwatcher CLI...\"\n  if command -v npm >/dev/null 2>&1; then\n    (cd \"${REPO_ROOT}\" && npm run build)\n  else\n    echo \"error: ${REPO_ROOT}/dist/cli.js missing and npm not on PATH\" >&2\n    exit 1\n  fi\nfi\n\nrm -rf \"${CLI_DEST}\"\nmkdir -p \"${CLI_DEST}\"\ncp -R \"${REPO_ROOT}/dist/\"* \"${CLI_DEST}/\"\necho \"Bundled CLI to ${CLI_DEST}\"\n";
+			shellScript = "set -euo pipefail\nREPO_ROOT=\"${SRCROOT}/..\"\nCLI_DEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/cli\"\n\nif [ ! -f \"${REPO_ROOT}/dist/cli.js\" ]; then\n  echo \"Building creditwatcher CLI...\"\n  if command -v npm >/dev/null 2>&1; then\n    (cd \"${REPO_ROOT}\" && npm run build)\n  else\n    echo \"error: ${REPO_ROOT}/dist/cli.js missing and npm not on PATH\" >&2\n    exit 1\n  fi\nfi\n\nrm -rf \"${CLI_DEST}\"\nmkdir -p \"${CLI_DEST}\"\ncp -R \"${REPO_ROOT}/dist/\"* \"${CLI_DEST}/\"\ncp \"${REPO_ROOT}/package.json\" \"${CLI_DEST}/package.json\"\necho \"Bundled CLI to ${CLI_DEST}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
