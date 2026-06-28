@@ -42,7 +42,7 @@ npx creditwatcher status codex
 | Command | Description |
 |---------|-------------|
 | `creditwatcher login codex` | OAuth PKCE login via auth.openai.com |
-| `creditwatcher login claude` | Import credentials from Claude Code (Keychain or `~/.claude/.credentials.json`) |
+| `creditwatcher login claude` | Import credentials from `~/.claude/.credentials.json` |
 | `creditwatcher login cursor` | Import Cursor session from Cursor.app (`state.vscdb`) or paste token |
 | `creditwatcher status codex` | Show Codex usage limits |
 | `creditwatcher status claude` | Show Claude 5h / 7d utilization |
@@ -111,7 +111,7 @@ The built app is at `~/Library/Developer/Xcode/DerivedData/.../Build/Products/De
 ```
 CreditWatcher.app (Swift)
 ├── CodexProvider    → ~/.codex/auth.json + GET /wham/usage
-├── ClaudeProvider   → Keychain / ~/.claude + GET /api/oauth/usage
+├── ClaudeProvider   → ~/.claude / Keychain + GET /api/oauth/usage
 └── CursorProvider   → Cursor state.vscdb + GET cursor.com/api/usage-summary
 ```
 
@@ -172,8 +172,8 @@ creditwatcher status claude
 creditwatcher reads Claude OAuth tokens from (in order, freshest token wins on auth failure):
 
 1. `CLAUDE_CODE_OAUTH_TOKEN` environment variable
-2. macOS Keychain (`Claude Code-credentials-<hash>` or legacy `Claude Code-credentials`)
-3. `~/.claude/.credentials.json`
+2. `~/.claude/.credentials.json` (if present — Keychain is skipped when this file exists)
+3. macOS Keychain (`Claude Code-credentials`) — Claude Code's default store when no credentials file
 4. `~/.creditwatcher/claude-auth.json` (import copy)
 
 **Optional import copy:**
@@ -188,7 +188,7 @@ This copies tokens into `~/.creditwatcher/claude-auth.json` (mode 0600) without 
 
 - **Read-only** `GET https://api.anthropic.com/api/oauth/usage` only
 - Direct calls to `api.anthropic.com` only — no third-party relay
-- Refreshes expired tokens via `POST https://platform.claude.com/v1/oauth/token` and saves rotated tokens to `~/.creditwatcher/claude-auth.json` only (never writes Claude Code's Keychain or `~/.claude/.credentials.json`)
+- Refreshes expired tokens via `POST https://platform.claude.com/v1/oauth/token` and saves rotated tokens to `~/.creditwatcher/claude-auth.json` only (never writes `~/.claude/.credentials.json`)
 - On-demand checks with a **60-second cooldown** (separate from Codex)
 - Required headers: `Authorization`, `anthropic-beta: oauth-2025-04-20`, `User-Agent: claude-code/...`
 - **OAuth scope:** `/api/oauth/usage` requires `user:profile` in the token scopes. Tokens with only `user:inference` return 401/403.

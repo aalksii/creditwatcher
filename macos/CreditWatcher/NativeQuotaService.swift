@@ -40,13 +40,14 @@ enum NativeQuotaService {
         }
 
         let message = error.localizedDescription
-        let classified = classifyHttpError(message)
+        let classified = classifyHttpError(message, provider: provider)
 
         if var cached = QuotaCache.loadProviderCache(provider) {
             cached.status = "error"
             cached.providerId = provider.rawValue
             cached.cached = true
             cached.error = classified
+            cached.loginHint = loginHint(for: provider)
             return cached
         }
 
@@ -58,12 +59,20 @@ enum NativeQuotaService {
         )
     }
 
-    private static func classifyHttpError(_ message: String) -> String {
+    private static func classifyHttpError(_ message: String, provider: ProviderID) -> String {
         if message.contains("(401)") || message.contains("(403)") {
-            return "Authentication failed. Re-login with the official CLI."
+            return "Authentication failed. Sign in with the official CLI."
         }
         if message.contains("(429)") {
+            if provider == .claude {
+                return "Rate limited or session expired. Sign in with Claude Code, then refresh."
+            }
             return "Rate limited. Try again later."
+        }
+        if provider == .claude,
+           message.localizedCaseInsensitiveContains("authentication") ||
+           message.localizedCaseInsensitiveContains("session expired") {
+            return message
         }
         return message
     }

@@ -118,19 +118,21 @@ export async function loadClaudeCredentialCandidates(): Promise<
     if (fromEnv) candidates.push(fromEnv);
   }
 
-  const keychain = await readClaudeKeychainCredentials();
-  if (keychain) {
-    const fromKeychain = parseCredentialsJson(
-      keychain.raw,
-      `macOS Keychain (${keychain.service}, ${userInfo().username})`,
-      true,
-    );
-    if (fromKeychain) candidates.push(fromKeychain);
-  }
-
   const claudePath = claudeCredentialsPath();
   const fromClaude = await tryLoadFile(claudePath, true);
-  if (fromClaude) candidates.push(fromClaude);
+  if (fromClaude) {
+    candidates.push(fromClaude);
+  } else {
+    const keychain = await readClaudeKeychainCredentials();
+    if (keychain) {
+      const fromKeychain = parseCredentialsJson(
+        keychain.raw,
+        `macOS Keychain (${keychain.service}, ${userInfo().username})`,
+        true,
+      );
+      if (fromKeychain) candidates.push(fromKeychain);
+    }
+  }
 
   const fromCopy = await tryLoadFile(creditwatcherClaudeAuthPath(), false);
   if (fromCopy) candidates.push(fromCopy);

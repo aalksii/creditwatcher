@@ -8,6 +8,8 @@ import {
   clampPercent,
   formatDuration,
   progressBar,
+  usageCooldownWaitSeconds,
+  usageFetchedAtNow,
 } from "../utils.js";
 import {
   CURSOR_AUTH_ME_URL,
@@ -88,7 +90,7 @@ async function writeCache(): Promise<void> {
   });
   await writeFile(
     CACHE_FILE,
-    JSON.stringify({ fetchedAt: Date.now() }),
+    JSON.stringify({ fetchedAt: usageFetchedAtNow() }),
     { mode: 0o600 },
   );
 }
@@ -251,9 +253,11 @@ export async function fetchCursorUsage(options: {
   if (!options.force) {
     const cache = await readCache();
     if (cache) {
-      const elapsed = (Date.now() - cache.fetchedAt) / 1000;
-      if (elapsed < USAGE_MIN_INTERVAL_SEC) {
-        const wait = Math.ceil(USAGE_MIN_INTERVAL_SEC - elapsed);
+      const wait = usageCooldownWaitSeconds(
+        cache.fetchedAt,
+        USAGE_MIN_INTERVAL_SEC,
+      );
+      if (wait != null) {
         throw new Error(
           `Cursor usage was checked recently. Wait ${wait}s before checking again (max once per ${USAGE_MIN_INTERVAL_SEC}s).`,
         );

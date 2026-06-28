@@ -14,11 +14,27 @@ enum QuotaCache {
               let entry = try? JSONDecoder().decode(UsageCooldown.self, from: data)
         else { return }
 
-        let elapsed = Date().timeIntervalSince1970 - entry.fetchedAt
+        let fetchedAt = normalizeFetchedAt(entry.fetchedAt)
+        let elapsed = Date().timeIntervalSince1970 - fetchedAt
+
+        // Mixed CLI (ms) / app (s) cache formats can produce bogus wait times.
+        if elapsed < 0 || elapsed > minInterval {
+            try? FileManager.default.removeItem(at: url)
+            return
+        }
+
         if elapsed < minInterval {
             let wait = Int(ceil(minInterval - elapsed))
+            if wait > Int(minInterval) {
+                try? FileManager.default.removeItem(at: url)
+                return
+            }
             throw QuotaError.cooldown(seconds: wait, provider: provider)
         }
+    }
+
+    private static func normalizeFetchedAt(_ value: TimeInterval) -> TimeInterval {
+        value > 1_000_000_000_000 ? value / 1000 : value
     }
 
     static func markUsageFetched(provider: ProviderID) {

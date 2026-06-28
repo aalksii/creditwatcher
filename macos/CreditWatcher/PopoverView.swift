@@ -1,5 +1,4 @@
 import SwiftUI
-import AppKit
 
 struct PopoverView: View {
     @ObservedObject var viewModel: QuotaViewModel
@@ -110,7 +109,7 @@ struct PopoverView: View {
             .disabled(viewModel.isLoading)
 
             Button("CLI") {
-                openCLIHelp()
+                TerminalHelper.runCommand("creditwatcher dashboard --verbose")
             }
             .controlSize(.small)
         }
@@ -128,18 +127,5 @@ struct PopoverView: View {
         }
         guard let date else { return iso }
         return date.formatted(date: .omitted, time: .shortened)
-    }
-
-    private func openCLIHelp() {
-        let script = """
-        tell application "Terminal"
-            activate
-            do script "creditwatcher dashboard --verbose"
-        end tell
-        """
-        if let appleScript = NSAppleScript(source: script) {
-            var error: NSDictionary?
-            appleScript.executeAndReturnError(&error)
-        }
     }
 }

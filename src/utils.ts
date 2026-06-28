@@ -136,3 +136,27 @@ export function progressBar(usedPercent: number, width = 12): string {
 export function clampPercent(value: number): number {
   return Math.min(Math.max(value, 0), 100);
 }
+
+/** Normalize usage-cache `fetchedAt` — Node historically wrote ms, Swift writes seconds. */
+export function normalizeUsageFetchedAt(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return value > 1_000_000_000_000 ? value / 1000 : value;
+}
+
+export function usageFetchedAtNow(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+/** Seconds until usage can be fetched again, or null if cooldown does not apply. */
+export function usageCooldownWaitSeconds(
+  fetchedAt: number,
+  minIntervalSec: number,
+): number | null {
+  const normalized = normalizeUsageFetchedAt(fetchedAt);
+  const elapsed = usageFetchedAtNow() - normalized;
+  if (elapsed < 0) return null;
+  if (elapsed >= minIntervalSec) return null;
+  const wait = Math.ceil(minIntervalSec - elapsed);
+  if (wait > minIntervalSec) return null;
+  return wait;
+}

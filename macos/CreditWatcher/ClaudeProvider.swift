@@ -64,6 +64,11 @@ enum ClaudeAuth {
             .appendingPathComponent(".creditwatcher/claude-auth.json")
     }
 
+    /// True when Claude Code's own credentials file exists (Keychain is not used in that case).
+    static var officialCredentialsExist: Bool {
+        FileManager.default.fileExists(atPath: claudeCredsPath.path)
+    }
+
     static func loadCandidates() -> [ClaudeCredentials] {
         var candidates: [ClaudeCredentials] = []
 
@@ -73,12 +78,13 @@ enum ClaudeAuth {
             candidates.append(c)
         }
 
-        if let keychain = ClaudeKeychain.read(),
-           let c = parse(json: keychain.raw, path: "macOS Keychain (\(keychain.service))", managed: true) {
+        if let c = loadFile(claudeCredsPath, managed: true) {
+            candidates.append(c)
+        } else if let keychain = ClaudeKeychain.read(),
+                  let c = parse(json: keychain.raw, path: "macOS Keychain (\(keychain.service))", managed: true) {
             candidates.append(c)
         }
 
-        if let c = loadFile(claudeCredsPath, managed: true) { candidates.append(c) }
         if let c = loadFile(copyPath, managed: false) { candidates.append(c) }
 
         return candidates.sorted { a, b in
@@ -241,7 +247,7 @@ enum ClaudeProvider {
                 QuotaCache.saveProviderCache(.claude, data: result)
                 return result
             } catch let error as QuotaError {
-                if case .http(let status, _) = error, status == 401 || status == 403 {
+                if case .http(let status, _) = error, status == 401 || status == 403 || status == 429 {
                     lastAuthError = error
                     continue
                 }

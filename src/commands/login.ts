@@ -35,7 +35,7 @@ export async function loginClaude(): Promise<void> {
   console.log(CLAUDE_DISCLAIMER);
   console.log("");
   console.log(
-    "Importing credentials from Claude Code (Keychain or ~/.claude/.credentials.json)...",
+    "Importing credentials from ~/.claude/.credentials.json or macOS Keychain...",
   );
   console.log("");
 

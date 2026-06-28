@@ -14,7 +14,7 @@ import {
 function printLoginHelp(): void {
   console.log(`Usage:
   creditwatcher login codex      OAuth login (stores ~/.creditwatcher/auth.json)
-  creditwatcher login claude     Import Claude Code credentials (Keychain or ~/.claude/.credentials.json)
+  creditwatcher login claude     Import ~/.claude/.credentials.json
   creditwatcher login cursor     Import Cursor session from Cursor.app or paste token
 
 npm scripts:
@@ -66,7 +66,7 @@ function printHelp(): void {
 
 Usage:
   creditwatcher login codex      OAuth login (stores ~/.creditwatcher/auth.json)
-  creditwatcher login claude     Import ~/.claude/.credentials.json (or Keychain)
+  creditwatcher login claude     Import ~/.claude/.credentials.json
   creditwatcher login cursor     Import Cursor session from Cursor.app
   creditwatcher status codex     Show Codex usage limits
   creditwatcher status claude    Show Claude usage limits
