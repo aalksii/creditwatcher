@@ -7,14 +7,15 @@
     "creditwatcher": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/dashboard dist/dashboard",
     "dev": "tsx src/cli.ts",
     "login": "tsx src/cli.ts login",
     "login:codex": "tsx src/cli.ts login codex",
     "login:claude": "tsx src/cli.ts login claude",
     "status": "tsx src/cli.ts status",
     "status:codex": "tsx src/cli.ts status codex",
-    "status:claude": "tsx src/cli.ts status claude"
+    "status:claude": "tsx src/cli.ts status claude",
+    "serve": "tsx src/cli.ts serve"
   },
   "engines": {
     "node": ">=18"

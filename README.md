@@ -24,6 +24,7 @@ npm run status:claude   # Claude only
 npm run login           # show login help
 npm run login:codex     # Codex OAuth → ~/.creditwatcher/auth.json
 npm run login:claude    # import Claude Code credentials
+npm run serve           # local dashboard at http://127.0.0.1:9477
 ```
 
 **One-off** (if published or with `bin` set locally after build):
@@ -43,7 +44,21 @@ npx creditwatcher status codex
 | `creditwatcher status claude` | Show Claude 5h / 7d utilization |
 | `creditwatcher status` | Show all providers with credentials configured |
 | `creditwatcher status --force` | Skip the 60-second usage cooldown |
+| `creditwatcher serve` | Local web dashboard at http://127.0.0.1:9477 |
+| `creditwatcher serve --port 3000` | Dashboard on a custom port |
 
+
+## Dashboard
+
+Start a local-only web UI to view Codex and Claude limits side by side:
+
+```bash
+npm run serve
+# or: creditwatcher serve
+# or: creditwatcher serve --port 3000
+```
+
+Open **http://127.0.0.1:9477** in your browser. The server binds to `127.0.0.1` only — no external access, no tokens in API responses. Auto-refreshes every 60 seconds (respects usage cooldowns). Use **Refresh** for a manual update (may show cached data if within the 60s cooldown).
 
 ## Claude Code setup
 

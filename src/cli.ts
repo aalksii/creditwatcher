@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { loginClaude, loginCodex } from "./commands/login.js";
+import { serveCommand } from "./commands/serve.js";
 import { statusAll, statusClaude, statusCodex } from "./commands/status.js";
 
 function printLoginHelp(): void {
@@ -27,6 +28,15 @@ npm scripts:
   npm run status:claude          Same as status claude`);
 }
 
+function printServeHelp(): void {
+  console.log(`Usage:
+  creditwatcher serve              Start local dashboard at http://127.0.0.1:9477
+  creditwatcher serve --port 3000  Use a custom port
+
+npm scripts:
+  npm run serve                    Same as serve`);
+}
+
 function printHelp(): void {
   console.log(`creditwatcher — check Codex and Claude usage limits safely
 
@@ -37,6 +47,8 @@ Usage:
   creditwatcher status claude    Show Claude usage limits
   creditwatcher status           Show all configured providers
   creditwatcher status --force   Bypass 60s usage check cooldown
+  creditwatcher serve            Local web dashboard (127.0.0.1:9477)
+  creditwatcher serve --port N   Dashboard on custom port
 
 Environment:
   CREDITWATCHER_OAUTH_PORT       OAuth callback port for Codex (default: 1455)
@@ -101,6 +113,20 @@ async function main(): Promise<void> {
           process.exitCode = 1;
         }
         break;
+
+      case "serve": {
+        const serveArgs = args.filter((a) => !a.startsWith("-") && a !== "serve");
+        if (serveArgs.length > 0) {
+          console.error(`Ignoring extra argument(s): ${serveArgs.join(", ")}`);
+        }
+        const portArgs = args.filter((a) => a !== "serve");
+        if (portArgs.includes("--help")) {
+          printServeHelp();
+          break;
+        }
+        await serveCommand(portArgs);
+        break;
+      }
 
       default:
         console.error(`Unknown command: ${command}`);
