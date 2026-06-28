@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+auth.json
+claude-auth.json
+*.credentials.json
+.creditwatcher/
+.auth.json.*

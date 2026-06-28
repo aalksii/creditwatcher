@@ -1,0 +1,26 @@
+{
+  "name": "creditwatcher",
+  "version": "0.1.0",
+  "description": "CLI to check Codex and Claude OAuth usage limits safely",
+  "type": "module",
+  "bin": {
+    "creditwatcher": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "login": "tsx src/cli.ts login codex",
+    "status": "tsx src/cli.ts status",
+    "status:codex": "tsx src/cli.ts status codex",
+    "login:claude": "tsx src/cli.ts login claude",
+    "status:claude": "tsx src/cli.ts status claude"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
