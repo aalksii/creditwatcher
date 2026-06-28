@@ -1,6 +1,6 @@
 # creditwatcher
 
-A minimal CLI to check **Codex** and **Claude Code** subscription usage limits safely.
+A minimal CLI to check **Codex**, **Claude Code**, and **Cursor** subscription usage limits safely.
 
 ## Install
 
@@ -22,9 +22,11 @@ npm run dashboard       # rich terminal dashboard (all providers)
 npm run status          # detailed text output per provider
 npm run status:codex    # Codex only
 npm run status:claude   # Claude only
+npm run status:cursor   # Cursor only
 npm run login           # show login help
 npm run login:codex     # Codex OAuth → ~/.creditwatcher/auth.json
 npm run login:claude    # import Claude Code credentials
+npm run login:cursor    # import Cursor session from Cursor.app
 npm run serve           # optional web UI at http://127.0.0.1:9477
 ```
 
@@ -41,9 +43,11 @@ npx creditwatcher status codex
 |---------|-------------|
 | `creditwatcher login codex` | OAuth PKCE login via auth.openai.com |
 | `creditwatcher login claude` | Import credentials from Claude Code (Keychain or `~/.claude/.credentials.json`) |
+| `creditwatcher login cursor` | Import Cursor session from Cursor.app (`state.vscdb`) or paste token |
 | `creditwatcher status codex` | Show Codex usage limits |
 | `creditwatcher status claude` | Show Claude 5h / 7d utilization |
-| `creditwatcher dashboard` | Rich terminal dashboard — Codex and Claude side by side |
+| `creditwatcher status cursor` | Show Cursor plan usage (included / on-demand) |
+| `creditwatcher dashboard` | Rich terminal dashboard — Codex, Claude, and Cursor |
 | `creditwatcher dashboard --force` | Skip the 60-second usage cooldown |
 | `creditwatcher status` | Show all providers with credentials configured |
 | `creditwatcher status --force` | Skip the 60-second usage cooldown |
@@ -61,7 +65,7 @@ npm run dashboard
 # or: creditwatcher dashboard --force   # bypass 60s cooldown
 ```
 
-Shows Codex and Claude side by side: plan name, auth source, usage windows (5h / weekly / 7d), reset countdown, and Codex credits. Color coding: green below 70%, yellow 70–90%, red above 90%.
+Shows Codex, Claude, and Cursor: plan name, auth source, usage windows, reset countdown, and billing cycle (Cursor). Color coding: green below 70%, yellow 70–90%, red above 90%.
 
 ### Optional web UI
 
@@ -107,6 +111,37 @@ This copies tokens into `~/.creditwatcher/claude-auth.json` (mode 0600) without 
 - Required headers: `Authorization`, `anthropic-beta: oauth-2025-04-20`, `User-Agent: claude-code/...`
 - **OAuth scope:** `/api/oauth/usage` requires `user:profile` in the token scopes. Tokens with only `user:inference` return 401/403.
 - Anthropic restricts consumer OAuth in third-party tools — **use at your own risk**
+
+## Cursor setup
+
+**Recommended:** sign in with the official Cursor app — creditwatcher reads the session automatically:
+
+```bash
+# Sign in via Cursor.app, then:
+creditwatcher status cursor
+```
+
+Auth sources (in order):
+
+1. `CURSOR_SESSION_TOKEN` environment variable (`WorkosCursorSessionToken` value, or JWT from `cursorAuth/accessToken`)
+2. Cursor IDE SQLite state DB — `state.vscdb` key `cursorAuth/accessToken` (macOS/Linux/Windows)
+3. `~/.creditwatcher/cursor-auth.json` (import copy)
+
+**Optional import copy:**
+
+```bash
+creditwatcher login cursor
+```
+
+Reads from Cursor.app if installed; otherwise prompts to paste a session token from browser DevTools (Application → Cookies → `WorkosCursorSessionToken` on cursor.com).
+
+### Cursor safety notes
+
+- **Read-only** `GET https://cursor.com/api/usage-summary` and `GET https://cursor.com/api/auth/me` only
+- **Unofficial API** — reverse-engineered from the Cursor dashboard; may change without notice
+- Session tokens stay **local only** — never logged or sent to third parties
+- On-demand checks with a **60-second cooldown** (separate from Codex/Claude)
+- No official Cursor API exists — **use at your own risk**
 
 ## Setup
 
@@ -205,6 +240,8 @@ Matches the official Codex CLI (verified from openresponses/codex and opencode s
 |----------|---------|-------------|
 | `CODEX_HOME` | `~/.codex` | Where to find Codex CLI auth.json |
 | `CLAUDE_CONFIG_DIR` | `~/.claude` | Where to find Claude `.credentials.json` |
+| `CURSOR_SESSION_TOKEN` | — | Cursor `WorkosCursorSessionToken` cookie value |
+| `CURSOR_STATE_DB` | platform default | Override path to Cursor `state.vscdb` |
 | `CREDITWATCHER_OAUTH_PORT` | `1455` | OAuth callback port |
 
 ## Example output
