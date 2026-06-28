@@ -38,18 +38,25 @@ struct PopoverView: View {
         ScrollView {
             VStack(spacing: 10) {
                 if let error = viewModel.errorMessage, viewModel.quota == nil {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .padding()
+                    errorCard(message: error, hint: viewModel.errorHint)
                 }
 
                 if let quota = viewModel.quota {
                     ForEach(quota.providers) { provider in
                         ProviderCardView(provider: provider)
                     }
-                } else if !viewModel.isLoading && viewModel.errorMessage == nil {
-                    Text("Loading usage…")
+                } else if viewModel.isLoading {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Fetching usage…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+                } else if viewModel.errorMessage == nil {
+                    Text("No usage data yet.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding()
@@ -58,6 +65,34 @@ struct PopoverView: View {
             .padding(12)
         }
         .frame(maxHeight: 420)
+    }
+
+    private func errorCard(message: String, hint: String?) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Could not load usage", systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .textSelection(.enabled)
+
+            if let hint {
+                Text(hint)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.orange.opacity(0.25), lineWidth: 1)
+        )
     }
 
     private var footer: some View {

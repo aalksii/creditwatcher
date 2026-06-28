@@ -8,9 +8,9 @@ struct CreditWatcherApp: App {
         MenuBarExtra {
             PopoverView(viewModel: viewModel)
         } label: {
-            Image(systemName: "gauge.with.dots.needle.67percent")
+            Image(systemName: "gauge")
                 .symbolRenderingMode(.palette)
-                .foregroundStyle(viewModel.menuBarTint, .primary)
+                .foregroundStyle(viewModel.menuBarTint, Color.primary.opacity(0.85))
         }
         .menuBarExtraStyle(.window)
     }

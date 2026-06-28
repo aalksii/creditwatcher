@@ -23,6 +23,7 @@
 		A100000200000005 /* QuotaViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaViewModel.swift; sourceTree = "<group>"; };
 		A100000200000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A100000200000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A100000200000008 /* CreditWatcher.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CreditWatcher.entitlements; sourceTree = "<group>"; };
 		A100000300000001 /* CreditWatcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreditWatcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -55,6 +56,7 @@
 				A100000200000005 /* QuotaViewModel.swift */,
 				A100000200000006 /* Assets.xcassets */,
 				A100000200000007 /* Info.plist */,
+				A100000200000008 /* CreditWatcher.entitlements */,
 			);
 			path = CreditWatcher;
 			sourceTree = "<group>";
@@ -74,6 +76,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A100000900000001 /* Build configuration list for PBXNativeTarget "CreditWatcher" */;
 			buildPhases = (
+				A100000700000002 /* Bundle CLI */,
 				A100000700000001 /* Sources */,
 				A100000400000001 /* Frameworks */,
 				A100000800000001 /* Resources */,
@@ -130,6 +133,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A100000700000002 /* Bundle CLI */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../dist/cli.js",
+			);
+			name = "Bundle CLI";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/cli/cli.js",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nREPO_ROOT=\"${SRCROOT}/..\"\nCLI_DEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/cli\"\n\nif [ ! -f \"${REPO_ROOT}/dist/cli.js\" ]; then\n  echo \"Building creditwatcher CLI...\"\n  if command -v npm >/dev/null 2>&1; then\n    (cd \"${REPO_ROOT}\" && npm run build)\n  else\n    echo \"error: ${REPO_ROOT}/dist/cli.js missing and npm not on PATH\" >&2\n    exit 1\n  fi\nfi\n\nrm -rf \"${CLI_DEST}\"\nmkdir -p \"${CLI_DEST}\"\ncp -R \"${REPO_ROOT}/dist/\"* \"${CLI_DEST}/\"\necho \"Bundled CLI to ${CLI_DEST}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A100000700000001 /* Sources */ = {
@@ -195,6 +218,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CreditWatcher/CreditWatcher.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -218,6 +242,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CreditWatcher/CreditWatcher.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;

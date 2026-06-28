@@ -5,6 +5,7 @@ final class QuotaViewModel: ObservableObject {
     @Published var quota: QuotaResponse?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var errorHint: String?
 
     private var refreshTask: Task<Void, Never>?
     private var backgroundTask: Task<Void, Never>?
@@ -32,12 +33,18 @@ final class QuotaViewModel: ObservableObject {
     private func load(force: Bool) async {
         isLoading = true
         errorMessage = nil
+        errorHint = nil
         defer { isLoading = false }
 
         do {
             let response = try await CLIClient.shared.fetchQuota(force: force)
             if !Task.isCancelled {
                 quota = response
+            }
+        } catch let error as CLIClientError {
+            if !Task.isCancelled {
+                errorMessage = error.localizedDescription
+                errorHint = error.recoverySuggestion
             }
         } catch {
             if !Task.isCancelled {

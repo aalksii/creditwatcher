@@ -75,15 +75,15 @@ Native menu bar app (Stats-inspired) that shells out to the CLI — no direct AP
 
 ### Prerequisites
 
-1. Build and link the CLI so `creditwatcher` is on your PATH:
+1. Build the CLI (bundled into the app at build time):
 
 ```bash
 npm install
 npm run build
-npm link
 ```
 
-2. macOS 14+ (Sonoma) and Xcode 15+
+2. Node.js 18+ on your Mac (Homebrew, nvm, or fnm — the app discovers common install paths)
+3. macOS 14+ (Sonoma) and Xcode 15+
 
 ### Build
 
@@ -96,17 +96,21 @@ Or from the command line:
 
 ```bash
 cd macos
-xcodebuild -project CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Release build
+xcodebuild -project CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Debug build
 ```
 
-The built app is at `macos/build/Release/CreditWatcher.app` (or under `~/Library/Developer/Xcode/DerivedData/` when building from Xcode).
+The build copies `dist/` into the app bundle (`Contents/Resources/cli/`). If `dist/cli.js` is missing, the **Bundle CLI** build phase runs `npm run build` automatically.
+
+The built app is at `~/Library/Developer/Xcode/DerivedData/.../Build/Products/Debug/CreditWatcher.app` when building from Xcode.
 
 ### Run
 
-1. Launch **CreditWatcher** from Xcode or open the built `.app`
+1. Launch **CreditWatcher** from Xcode (⌘R) or open the built `.app`
 2. A gauge icon appears in the menu bar (no Dock icon — `LSUIElement`)
 3. Click the icon to open a popover with Codex, Claude, and Cursor usage cards
 4. Icon tint reflects worst-case usage: green &lt;70%, yellow 70–90%, red &gt;90%
+
+If the popover shows an error card instead of data, see **CLI resolution** below.
 
 **Refresh:** opens popover → auto-refresh; **Refresh** button forces `--force` (bypasses 60s cooldown). Background refresh every 60 seconds.
 
@@ -114,12 +118,16 @@ The built app is at `macos/build/Release/CreditWatcher.app` (or under `~/Library
 
 ### CLI resolution
 
-The app finds `creditwatcher` in this order:
+The app runs `node …/Resources/cli/cli.js quota --json`. Resolution order:
 
-1. `CREDITWATCHER_CLI_PATH` environment variable (path to binary or `cli.js`)
-2. Bundled copy in app Resources (if added)
-3. `creditwatcher` on PATH (`/usr/local/bin`, `/opt/homebrew/bin`)
-4. Dev fallback: `dist/cli.js` relative to the repo (via `node`)
+1. `CREDITWATCHER_CLI_PATH` — override in Xcode scheme (Edit Scheme → Run → Arguments → Environment Variables). Use a path to the `creditwatcher` binary or to `cli.js`.
+2. **Bundled CLI** in `CreditWatcher.app/Contents/Resources/cli/` (copied from `dist/` at build time)
+3. `creditwatcher` on PATH (Homebrew, nvm, etc.)
+4. Dev fallback: `~/git/creditwatcher/dist/cli.js`
+
+**Node** is resolved via Homebrew (`/opt/homebrew/bin/node`), nvm, fnm, and `/usr/local/bin/node` — Xcode does not inherit your shell PATH, so the app does not rely on `which creditwatcher` alone.
+
+**Running from Xcode:** no `npm link` required if the **Bundle CLI** build phase succeeds. Ensure Node is installed. Optional: set `CREDITWATCHER_CLI_PATH` to your local `dist/cli.js` for faster iteration without rebuilding the bundle.
 
 ### Launch at login
 
