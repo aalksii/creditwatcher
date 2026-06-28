@@ -5,6 +5,7 @@ import { loadClaudeCredentials } from "../claude/storage.js";
 import { fetchUsage } from "../codex/usage.js";
 import type { UsageSnapshot, WindowSnapshot } from "../types.js";
 import type { ClaudeUsageSnapshot } from "../claude/usage.js";
+import { loadQuotaCache, saveQuotaCache } from "./quota-cache.js";
 
 export interface QuotaWindow {
   label: string;
@@ -31,6 +32,9 @@ export interface ProviderQuota {
   loginHint?: string;
   lastUpdated?: string;
   cooldownSeconds?: number;
+  cached?: boolean;
+  nextRefreshAt?: string;
+  secondsUntilRefresh?: number;
 }
 
 export interface QuotaResponse {
@@ -46,7 +50,7 @@ interface CachedProvider {
 
 const cache: Partial<Record<"codex" | "claude", CachedProvider>> = {};
 
-function parseCooldownSeconds(message: string): number | undefined {
+export function parseCooldownSeconds(message: string): number | undefined {
   const match = message.match(/Wait (\d+)s before/);
   return match ? Number(match[1]) : undefined;
 }
@@ -138,41 +142,75 @@ function notConnected(
   };
 }
 
-function withCache(
+async function ensureMemoryCache(provider: "codex" | "claude"): Promise<void> {
+  if (cache[provider]) return;
+  const entry = await loadQuotaCache(provider);
+  if (entry) {
+    cache[provider] = { data: entry.data, fetchedAt: entry.fetchedAt };
+  }
+}
+
+async function resolveCachedData(
+  provider: "codex" | "claude",
+): Promise<ProviderQuota | undefined> {
+  await ensureMemoryCache(provider);
+  return cache[provider]?.data;
+}
+
+async function withCache(
   provider: "codex" | "claude",
   data: ProviderQuota,
-): ProviderQuota {
+): Promise<ProviderQuota> {
   cache[provider] = { data, fetchedAt: Date.now() };
+  await saveQuotaCache(provider, data);
   return data;
 }
 
-function cachedOrError(
+function cooldownQuota(
+  provider: "codex" | "claude",
+  cached: ProviderQuota,
+  cooldownSeconds: number,
+): ProviderQuota {
+  const nextRefreshAt = new Date(
+    Date.now() + cooldownSeconds * 1000,
+  ).toISOString();
+
+  return {
+    ...cached,
+    provider,
+    status: "cooldown",
+    cached: true,
+    cooldownSeconds,
+    secondsUntilRefresh: cooldownSeconds,
+    nextRefreshAt,
+  };
+}
+
+async function cachedOrError(
   provider: "codex" | "claude",
   err: unknown,
-  force: boolean,
-): ProviderQuota {
+): Promise<ProviderQuota> {
   const message = err instanceof Error ? err.message : String(err);
   const cooldownSeconds = parseCooldownSeconds(message);
-  const cached = cache[provider]?.data;
+  const cached = await resolveCachedData(provider);
 
   if (cooldownSeconds != null && cached) {
-    return {
-      ...cached,
-      status: "cooldown",
-      cooldownSeconds,
-      error: force
-        ? `Cooldown active — showing cached data. Wait ${cooldownSeconds}s for a fresh check.`
-        : `Using cached data. Fresh check in ${cooldownSeconds}s.`,
-    };
+    return cooldownQuota(provider, cached, cooldownSeconds);
   }
 
   if (cooldownSeconds != null) {
+    const nextRefreshAt = new Date(
+      Date.now() + cooldownSeconds * 1000,
+    ).toISOString();
+
     return {
       status: "cooldown",
       provider,
       windows: [],
       warnings: [],
       cooldownSeconds,
+      secondsUntilRefresh: cooldownSeconds,
+      nextRefreshAt,
       error: `Usage was checked recently. Wait ${cooldownSeconds}s before checking again.`,
     };
   }
@@ -187,40 +225,43 @@ function cachedOrError(
     authSource: cached?.authSource,
     credits: cached?.credits,
     lastUpdated: cached?.lastUpdated,
+    cached: cached != null,
     error: classifyHttpError(message),
   };
 }
 
 async function fetchCodexQuota(force: boolean): Promise<ProviderQuota> {
+  await ensureMemoryCache("codex");
   const creds = await loadCredentials();
   if (!creds) return notConnected("codex");
 
   try {
     const fresh = await ensureFreshCredentials(creds);
     const snapshot = await fetchUsage(fresh, { force });
-    return withCache("codex", {
+    return await withCache("codex", {
       status: "ok",
       provider: "codex",
       ...codexFromSnapshot(snapshot, fresh.sourcePath),
     });
   } catch (err) {
-    return cachedOrError("codex", err, force);
+    return cachedOrError("codex", err);
   }
 }
 
 async function fetchClaudeQuota(force: boolean): Promise<ProviderQuota> {
+  await ensureMemoryCache("claude");
   const creds = await loadClaudeCredentials();
   if (!creds) return notConnected("claude");
 
   try {
     const { snapshot, sourcePath } = await fetchClaudeUsage({ force });
-    return withCache("claude", {
+    return await withCache("claude", {
       status: "ok",
       provider: "claude",
       ...claudeFromSnapshot(snapshot, sourcePath),
     });
   } catch (err) {
-    return cachedOrError("claude", err, force);
+    return cachedOrError("claude", err);
   }
 }
 

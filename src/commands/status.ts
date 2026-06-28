@@ -5,6 +5,21 @@ import { CLAUDE_DISCLAIMER } from "../claude/constants.js";
 import { fetchClaudeUsage, formatClaudeUsageOutput } from "../claude/usage.js";
 import { loadClaudeCredentials } from "../claude/storage.js";
 import { fetchUsage, formatUsageOutput } from "../codex/usage.js";
+import { formatProviderStatusBlock } from "../dashboard/terminal.js";
+import { getQuota, parseCooldownSeconds } from "../server/quota.js";
+
+async function printCachedStatus(
+  provider: "codex" | "claude",
+  options: { force?: boolean },
+): Promise<boolean> {
+  const quota = await getQuota({ force: options.force });
+  const data = provider === "codex" ? quota.codex : quota.claude;
+  if (data.cached) {
+    console.log(formatProviderStatusBlock(data));
+    return true;
+  }
+  return false;
+}
 
 export async function statusCodex(options: { force?: boolean } = {}): Promise<boolean> {
   const creds = await loadCredentials();
@@ -19,10 +34,19 @@ export async function statusCodex(options: { force?: boolean } = {}): Promise<bo
   console.log(DISCLAIMER);
   console.log("");
 
-  const fresh = await ensureFreshCredentials(creds);
-  const snapshot = await fetchUsage(fresh, { force: options.force });
-  console.log(formatUsageOutput(snapshot, fresh.sourcePath));
-  return true;
+  try {
+    const fresh = await ensureFreshCredentials(creds);
+    const snapshot = await fetchUsage(fresh, { force: options.force });
+    console.log(formatUsageOutput(snapshot, fresh.sourcePath));
+    return true;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (parseCooldownSeconds(message) != null) {
+      return (await printCachedStatus("codex", options)) || false;
+    }
+    console.error(`Codex: ${message}`);
+    return false;
+  }
 }
 
 export async function statusClaude(options: { force?: boolean } = {}): Promise<boolean> {
@@ -38,11 +62,20 @@ export async function statusClaude(options: { force?: boolean } = {}): Promise<b
   console.log(CLAUDE_DISCLAIMER);
   console.log("");
 
-  const { snapshot, sourcePath } = await fetchClaudeUsage({
-    force: options.force,
-  });
-  console.log(formatClaudeUsageOutput(snapshot, sourcePath));
-  return true;
+  try {
+    const { snapshot, sourcePath } = await fetchClaudeUsage({
+      force: options.force,
+    });
+    console.log(formatClaudeUsageOutput(snapshot, sourcePath));
+    return true;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (parseCooldownSeconds(message) != null) {
+      return (await printCachedStatus("claude", options)) || false;
+    }
+    console.error(`Claude: ${message}`);
+    return false;
+  }
 }
 
 export async function statusAll(options: { force?: boolean } = {}): Promise<void> {
@@ -74,9 +107,18 @@ export async function statusAll(options: { force?: boolean } = {}): Promise<void
       console.log(formatUsageOutput(snapshot, fresh.sourcePath));
       anyOk = true;
     } catch (err) {
-      anyFail = true;
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`Codex: ${message}`);
+      if (parseCooldownSeconds(message) != null) {
+        if (await printCachedStatus("codex", options)) {
+          anyOk = true;
+        } else {
+          anyFail = true;
+          console.error(`Codex: ${message}`);
+        }
+      } else {
+        anyFail = true;
+        console.error(`Codex: ${message}`);
+      }
     }
     if (claudeCreds) console.log("");
   }
@@ -89,9 +131,18 @@ export async function statusAll(options: { force?: boolean } = {}): Promise<void
       console.log(formatClaudeUsageOutput(snapshot, sourcePath));
       anyOk = true;
     } catch (err) {
-      anyFail = true;
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`Claude: ${message}`);
+      if (parseCooldownSeconds(message) != null) {
+        if (await printCachedStatus("claude", options)) {
+          anyOk = true;
+        } else {
+          anyFail = true;
+          console.error(`Claude: ${message}`);
+        }
+      } else {
+        anyFail = true;
+        console.error(`Claude: ${message}`);
+      }
     }
   }
 

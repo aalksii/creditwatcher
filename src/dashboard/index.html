@@ -122,6 +122,19 @@
       white-space: nowrap;
     }
 
+    .cached-badge {
+      background: rgba(154, 160, 166, 0.15);
+      border-color: rgba(154, 160, 166, 0.35);
+    }
+
+    .card.cached {
+      opacity: 0.85;
+    }
+
+    .card.cached .bar-fill {
+      opacity: 0.65;
+    }
+
     .meta {
       font-size: 0.8rem;
       color: var(--muted);
@@ -296,17 +309,34 @@
       `;
     }
 
+    function formatRefreshNotice(p) {
+      const seconds = p.secondsUntilRefresh ?? p.cooldownSeconds;
+      if (seconds == null) return "";
+      if (seconds > 0) {
+        return "Next refresh in " + formatDuration(seconds);
+      }
+      if (p.nextRefreshAt) {
+        return "Refresh available at " + new Date(p.nextRefreshAt).toLocaleTimeString();
+      }
+      return "";
+    }
+
     function renderProvider(name, p) {
       const title = name === "codex" ? "Codex" : "Claude";
       const plan = p.plan || p.account || "—";
       const alerts = [];
+      const refreshNotice = formatRefreshNotice(p);
 
       if (p.status === "not_connected") {
         alerts.push(`<div class="alert info">${escapeHtml(p.loginHint || "Not connected")}</div>`);
       } else if (p.status === "error" && p.error) {
         alerts.push(`<div class="alert">${escapeHtml(p.error)}</div>`);
-      } else if (p.status === "cooldown" && p.error) {
+      } else if (p.status === "cooldown" && p.error && !p.cached) {
         alerts.push(`<div class="alert warn">${escapeHtml(p.error)}</div>`);
+      }
+
+      if (refreshNotice) {
+        alerts.push(`<div class="meta">${escapeHtml(refreshNotice)}</div>`);
       }
 
       for (const w of p.warnings || []) {
@@ -334,11 +364,16 @@
         ? `<div class="meta">Last updated: ${formatTime(p.lastUpdated)}</div>`
         : "";
 
+      const badges = [
+        `<span class="plan-badge">${escapeHtml(plan)}</span>`,
+        p.cached ? `<span class="plan-badge cached-badge">cached</span>` : "",
+      ].filter(Boolean).join("");
+
       return `
-        <article class="card">
+        <article class="card${p.cached ? " cached" : ""}">
           <div class="card-header">
             <div class="provider-name">${title}</div>
-            <span class="plan-badge">${escapeHtml(plan)}</span>
+            <div>${badges}</div>
           </div>
           ${alerts.join("")}
           ${windows}

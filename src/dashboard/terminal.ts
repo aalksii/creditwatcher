@@ -77,13 +77,40 @@ function providerTitle(provider: ProviderQuota): string {
     return c(ANSI.dim, `${name} — not connected`);
   }
   const plan = provider.plan ?? "unknown";
-  return c(ANSI.bold, `${name} (${plan})`);
+  const title = c(ANSI.bold, `${name} (${plan})`);
+  if (provider.cached) {
+    return `${title}${c(ANSI.dim, " cached")}`;
+  }
+  return title;
 }
 
-function formatWindowLine(w: ProviderQuota["windows"][number]): string {
+function formatRefreshNotice(provider: ProviderQuota): string | undefined {
+  const seconds =
+    provider.secondsUntilRefresh ?? provider.cooldownSeconds;
+  if (seconds == null) return undefined;
+
+  if (seconds > 0) {
+    return `Next refresh in ${formatDuration(seconds)}`;
+  }
+
+  if (provider.nextRefreshAt) {
+    return `Refresh available at ${new Date(provider.nextRefreshAt).toLocaleTimeString()}`;
+  }
+
+  return undefined;
+}
+
+function formatWindowLine(
+  w: ProviderQuota["windows"][number],
+  dimmed = false,
+): string {
   const label = shortWindowLabel(w.label).padEnd(3);
-  const bar = colorBar(w.usedPercent);
-  const pct = c(percentColor(w.usedPercent), formatPercent(w.usedPercent));
+  const bar = dimmed
+    ? c(ANSI.dim, progressBar(w.usedPercent))
+    : colorBar(w.usedPercent);
+  const pct = dimmed
+    ? c(ANSI.dim, formatPercent(w.usedPercent))
+    : c(percentColor(w.usedPercent), formatPercent(w.usedPercent));
   let line = `${label} ${bar} ${pct}`;
 
   if (w.resetAfterSeconds != null && w.resetAfterSeconds > 0) {
@@ -95,6 +122,7 @@ function formatWindowLine(w: ProviderQuota["windows"][number]): string {
 
 function providerBody(provider: ProviderQuota, colWidth: number): string[] {
   const lines: string[] = [];
+  const dimmed = provider.cached === true;
 
   if (provider.status === "not_connected") {
     lines.push(c(ANSI.dim, truncate(provider.loginHint ?? "Not logged in", colWidth)));
@@ -107,10 +135,19 @@ function providerBody(provider: ProviderQuota, colWidth: number): string[] {
     );
   }
 
-  if (provider.status === "cooldown" || provider.status === "error") {
-    if (provider.error) {
-      lines.push(c(ANSI.yellow, truncate(provider.error, colWidth)));
-    }
+  const refreshNotice = formatRefreshNotice(provider);
+  if (refreshNotice) {
+    lines.push(c(ANSI.dim, truncate(refreshNotice, colWidth)));
+  }
+
+  if (provider.status === "error" && provider.error) {
+    lines.push(c(ANSI.yellow, truncate(provider.error, colWidth)));
+  } else if (
+    provider.status === "cooldown" &&
+    provider.error &&
+    !provider.cached
+  ) {
+    lines.push(c(ANSI.yellow, truncate(provider.error, colWidth)));
   }
 
   if (provider.windows.length === 0) {
@@ -121,7 +158,7 @@ function providerBody(provider: ProviderQuota, colWidth: number): string[] {
   }
 
   for (const w of provider.windows) {
-    lines.push(truncate(formatWindowLine(w), colWidth));
+    lines.push(truncate(formatWindowLine(w, dimmed), colWidth));
   }
 
   if (provider.credits?.hasCredits || provider.credits?.balance) {
@@ -131,7 +168,9 @@ function providerBody(provider: ProviderQuota, colWidth: number): string[] {
         : provider.credits.balance != null
           ? `Credits: ${provider.credits.balance}`
           : "Credits: available";
-    lines.push(c(ANSI.cyan, truncate(credits, colWidth)));
+    lines.push(
+      c(dimmed ? ANSI.dim : ANSI.cyan, truncate(credits, colWidth)),
+    );
   }
 
   for (const warning of provider.warnings) {
@@ -166,6 +205,54 @@ function bottomBorder(): string {
 
 function headerRow(left: string, right: string, colWidth: number): string {
   return `│ ${left.padEnd(colWidth)} │ ${right.padEnd(colWidth)} │`;
+}
+
+export function formatProviderStatusBlock(provider: ProviderQuota): string {
+  const name = provider.provider === "codex" ? "Codex" : "Claude";
+  const plan = provider.plan ?? "unknown";
+  const cachedLabel = provider.cached ? " (cached)" : "";
+  const lines: string[] = [`${name} usage — ${plan}${cachedLabel}`];
+
+  if (provider.authSource) {
+    lines.push(`Auth: ${provider.authSource}`);
+  }
+
+  const refreshNotice = formatRefreshNotice(provider);
+  if (refreshNotice) {
+    lines.push(refreshNotice);
+  }
+
+  if (lines.length > 1 || provider.windows.length > 0) {
+    lines.push("");
+  }
+
+  for (const w of provider.windows) {
+    const bar = progressBar(w.usedPercent);
+    const used = w.usedPercent.toFixed(1);
+    const remain = w.remainingPercent.toFixed(1);
+    let line = `${w.label.padEnd(14)} ${bar} ${used}% used (${remain}% left)`;
+    if (w.resetAfterSeconds != null && w.resetAfterSeconds > 0) {
+      line += ` · resets in ${formatDuration(w.resetAfterSeconds)}`;
+    } else if (w.resetAt) {
+      line += ` · resets at ${new Date(w.resetAt).toLocaleString()}`;
+    }
+    lines.push(line);
+  }
+
+  if (provider.credits?.hasCredits || provider.credits?.balance) {
+    lines.push("");
+    if (provider.credits.unlimited) {
+      lines.push("Credits: unlimited");
+    } else if (provider.credits.balance != null) {
+      lines.push(`Credits balance: ${provider.credits.balance}`);
+    }
+  }
+
+  for (const warning of provider.warnings) {
+    lines.push(`⚠️  ${warning}`);
+  }
+
+  return lines.join("\n");
 }
 
 export function renderDashboard(quota: QuotaResponse): string {
