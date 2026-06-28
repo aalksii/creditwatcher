@@ -1,4 +1,6 @@
 import { homedir } from "node:os";
+import type { DisplayOptions } from "../display-options.js";
+import { formatAuthLines } from "../display-options.js";
 import type { ProviderQuota, QuotaResponse } from "../server/quota.js";
 import { formatDuration, progressBar } from "../utils.js";
 
@@ -153,7 +155,11 @@ function emptyBoxLine(): string {
   return `│${" ".repeat(BOX_WIDTH - 2)}│`;
 }
 
-function providerBody(provider: ProviderQuota): string[] {
+function providerBody(
+  provider: ProviderQuota,
+  options: DisplayOptions = {},
+  authToken?: string,
+): string[] {
   const lines: string[] = [];
   const width = contentWidth();
   const dimmed = provider.cached === true;
@@ -163,10 +169,12 @@ function providerBody(provider: ProviderQuota): string[] {
     return lines;
   }
 
-  if (provider.authSource) {
-    lines.push(
-      c(ANSI.dim, truncate(`Auth: ${shortenPath(provider.authSource)}`, width)),
-    );
+  for (const authLine of formatAuthLines(
+    provider.authSource ? shortenPath(provider.authSource) : undefined,
+    authToken,
+    options,
+  )) {
+    lines.push(c(ANSI.dim, truncate(authLine, width)));
   }
 
   if (provider.status === "error" && provider.error) {
@@ -209,8 +217,12 @@ function providerBody(provider: ProviderQuota): string[] {
   return lines;
 }
 
-function renderProviderSection(provider: ProviderQuota): string[] {
-  const lines = [providerTitle(provider), ...providerBody(provider)];
+function renderProviderSection(
+  provider: ProviderQuota,
+  options: DisplayOptions = {},
+  authToken?: string,
+): string[] {
+  const lines = [providerTitle(provider), ...providerBody(provider, options, authToken)];
   return lines.map((line) => boxLine(line));
 }
 
@@ -242,15 +254,19 @@ function providerSeparator(): string {
   return `│${" ".repeat(CONTENT_INDENT)}${dashes}${" ".repeat(Math.max(0, inner - CONTENT_INDENT - width))}│`;
 }
 
-export function formatProviderStatusBlock(provider: ProviderQuota): string {
+export function formatProviderStatusBlock(
+  provider: ProviderQuota,
+  options: DisplayOptions = {},
+  authToken?: string,
+): string {
   const name = providerDisplayName(provider.provider);
   const plan = provider.plan ?? "unknown";
   const cachedLabel = provider.cached ? " (cached)" : "";
   const lines: string[] = [`${name} usage — ${plan}${cachedLabel}`];
 
-  if (provider.authSource) {
-    lines.push(`Auth: ${provider.authSource}`);
-  }
+  lines.push(
+    ...formatAuthLines(provider.authSource, authToken, options),
+  );
 
   const refreshNotice = formatRefreshNotice(provider);
   if (refreshNotice) {
@@ -290,7 +306,14 @@ export function formatProviderStatusBlock(provider: ProviderQuota): string {
   return lines.join("\n");
 }
 
-export function renderDashboard(quota: QuotaResponse): string {
+export interface DashboardRenderOptions extends DisplayOptions {
+  authTokens?: Partial<Record<ProviderQuota["provider"], string>>;
+}
+
+export function renderDashboard(
+  quota: QuotaResponse,
+  options: DashboardRenderOptions = {},
+): string {
   const providers = getProviders(quota);
   const sections: string[] = [
     topBorder("CreditWatcher"),
@@ -303,7 +326,14 @@ export function renderDashboard(quota: QuotaResponse): string {
       sections.push(providerSeparator());
       sections.push(emptyBoxLine());
     }
-    sections.push(...renderProviderSection(providers[i]));
+    const provider = providers[i];
+    sections.push(
+      ...renderProviderSection(
+        provider,
+        options,
+        options.authTokens?.[provider.provider],
+      ),
+    );
   }
 
   sections.push(emptyBoxLine());

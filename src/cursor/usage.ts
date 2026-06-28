@@ -2,6 +2,8 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { USAGE_MIN_INTERVAL_SEC } from "../constants.js";
+import type { DisplayOptions } from "../display-options.js";
+import { formatAuthLines } from "../display-options.js";
 import {
   clampPercent,
   formatDuration,
@@ -295,6 +297,8 @@ export async function fetchCursorUsage(options: {
 export function formatCursorUsageOutput(
   snapshot: CursorUsageSnapshot,
   sourcePath: string,
+  options: DisplayOptions = {},
+  authToken?: string,
 ): string {
   const lines: string[] = [];
   const account = snapshot.email
@@ -302,7 +306,7 @@ export function formatCursorUsageOutput(
     : snapshot.membershipType;
 
   lines.push(`Cursor usage — ${account}`);
-  lines.push(`Auth: ${sourcePath}`);
+  lines.push(...formatAuthLines(sourcePath, authToken, options));
 
   if (snapshot.billingCycleStart && snapshot.billingCycleEnd) {
     const start = new Date(snapshot.billingCycleStart).toLocaleDateString();

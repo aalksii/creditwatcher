@@ -2,6 +2,8 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { USAGE_MIN_INTERVAL_SEC } from "../constants.js";
+import type { DisplayOptions } from "../display-options.js";
+import { formatAuthLines } from "../display-options.js";
 import { clampPercent, formatDuration, progressBar } from "../utils.js";
 import {
   CLAUDE_OAUTH_BETA,
@@ -254,11 +256,13 @@ export async function fetchClaudeUsage(options: {
 export function formatClaudeUsageOutput(
   snapshot: ClaudeUsageSnapshot,
   sourcePath: string,
+  options: DisplayOptions = {},
+  authToken?: string,
 ): string {
   const lines: string[] = [];
   const plan = snapshot.subscriptionType ?? "Claude";
   lines.push(`Claude usage — ${plan}`);
-  lines.push(`Auth: ${sourcePath}`);
+  lines.push(...formatAuthLines(sourcePath, authToken, options));
   lines.push("");
 
   if (snapshot.windows.length === 0) {

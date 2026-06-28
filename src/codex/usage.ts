@@ -2,6 +2,8 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { USAGE_MIN_INTERVAL_SEC, USAGE_URL, USER_AGENT } from "../constants.js";
+import type { DisplayOptions } from "../display-options.js";
+import { formatAuthLines } from "../display-options.js";
 import type { Credentials, UsageResponse, UsageSnapshot, WindowSnapshot } from "../types.js";
 import {
   clampPercent,
@@ -135,6 +137,8 @@ export function snapshotFromResponse(data: UsageResponse): UsageSnapshot {
 export function formatUsageOutput(
   snapshot: UsageSnapshot,
   sourcePath: string,
+  options: DisplayOptions = {},
+  authToken?: string,
 ): string {
   const lines: string[] = [];
 
@@ -143,7 +147,7 @@ export function formatUsageOutput(
     : snapshot.planType;
 
   lines.push(`Codex usage — ${account}`);
-  lines.push(`Auth: ${sourcePath}`);
+  lines.push(...formatAuthLines(sourcePath, authToken, options));
   lines.push("");
 
   if (snapshot.primary) {

@@ -30,6 +30,8 @@ function printStatusHelp(): void {
   creditwatcher status claude    Show Claude usage limits
   creditwatcher status cursor    Show Cursor usage limits
   creditwatcher status --force   Bypass 60s usage check cooldown
+  creditwatcher status --verbose   Show auth source paths
+  creditwatcher status --show-token  Show auth paths and tokens (sensitive)
 
 npm scripts:
   npm run status                 Same as status
@@ -42,6 +44,8 @@ function printDashboardHelp(): void {
   console.log(`Usage:
   creditwatcher dashboard           Rich terminal view of all providers
   creditwatcher dashboard --force   Bypass 60s usage check cooldown
+  creditwatcher dashboard --verbose Show auth source paths
+  creditwatcher dashboard --show-token  Show auth paths and tokens (sensitive)
 
 npm scripts:
   npm run dashboard                 Same as dashboard`);
@@ -68,8 +72,12 @@ Usage:
   creditwatcher status cursor    Show Cursor usage limits
   creditwatcher dashboard        Rich terminal dashboard (all providers)
   creditwatcher dashboard --force  Bypass 60s usage check cooldown
+  creditwatcher dashboard --verbose  Show auth source paths
+  creditwatcher dashboard --show-token  Show auth paths and tokens (sensitive)
   creditwatcher status           Show all configured providers
   creditwatcher status --force   Bypass 60s usage check cooldown
+  creditwatcher status --verbose Show auth source paths
+  creditwatcher status --show-token  Show auth paths and tokens (sensitive)
   creditwatcher serve            Optional web UI (127.0.0.1:9477)
   creditwatcher serve --port N   Web UI on custom port
 
@@ -90,6 +98,9 @@ Safety:
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const force = args.includes("--force");
+  const verbose = args.includes("--verbose");
+  const showToken = args.includes("--show-token");
+  const displayOptions = { verbose, showToken };
   const positional = args.filter((a) => !a.startsWith("-"));
 
   if (positional.length === 0 || positional.includes("help") || args.includes("--help")) {
@@ -128,15 +139,15 @@ async function main(): Promise<void> {
 
       case "status":
         if (!provider) {
-          await statusAll({ force });
+          await statusAll({ force, ...displayOptions });
         } else if (provider === "codex") {
-          const ok = await statusCodex({ force });
+          const ok = await statusCodex({ force, ...displayOptions });
           if (!ok) process.exitCode = 1;
         } else if (provider === "claude") {
-          const ok = await statusClaude({ force });
+          const ok = await statusClaude({ force, ...displayOptions });
           if (!ok) process.exitCode = 1;
         } else if (provider === "cursor") {
-          const ok = await statusCursor({ force });
+          const ok = await statusCursor({ force, ...displayOptions });
           if (!ok) process.exitCode = 1;
         } else {
           console.error(`Unknown provider: ${provider}`);
@@ -154,7 +165,7 @@ async function main(): Promise<void> {
           printDashboardHelp();
           break;
         }
-        await dashboardCommand({ force });
+        await dashboardCommand({ force, ...displayOptions });
         break;
       }
 

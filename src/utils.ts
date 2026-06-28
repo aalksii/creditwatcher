@@ -59,13 +59,22 @@ export function isTokenExpired(token: string, leewaySec = 120): boolean {
 
 export function formatDuration(seconds: number): string {
   if (seconds <= 0) return "now";
-  const h = Math.floor(seconds / 3600);
+  const totalHours = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
+
+  if (totalHours >= 24) {
+    const d = Math.floor(totalHours / 24);
+    const h = totalHours % 24;
+    const parts: string[] = [`${d}d`];
+    if (h > 0) parts.push(`${h}h`);
+    return parts.join(" ");
+  }
+
   const parts: string[] = [];
-  if (h > 0) parts.push(`${h}h`);
+  if (totalHours > 0) parts.push(`${totalHours}h`);
   if (m > 0) parts.push(`${m}m`);
-  if (s > 0 && h === 0) parts.push(`${s}s`);
+  if (s > 0 && totalHours === 0) parts.push(`${s}s`);
   return parts.join(" ") || "0s";
 }
 

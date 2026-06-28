@@ -9,23 +9,43 @@ import { fetchCursorUsage, formatCursorUsageOutput } from "../cursor/usage.js";
 import { loadCursorCredentials } from "../cursor/storage.js";
 import { fetchUsage, formatUsageOutput } from "../codex/usage.js";
 import { formatProviderStatusBlock } from "../dashboard/terminal.js";
+import type { DisplayOptions } from "../display-options.js";
+import {
+  loadProviderAuthToken,
+  TOKEN_WARNING,
+} from "../display-options.js";
 import { getQuota, parseCooldownSeconds } from "../server/quota.js";
 import type { QuotaProvider } from "../server/quota-cache.js";
 
+export interface StatusCommandOptions extends DisplayOptions {
+  force?: boolean;
+}
+
+function warnIfShowToken(options: StatusCommandOptions): void {
+  if (options.showToken) {
+    console.error(TOKEN_WARNING);
+  }
+}
+
 async function printCachedStatus(
   provider: QuotaProvider,
-  options: { force?: boolean },
+  options: StatusCommandOptions,
 ): Promise<boolean> {
   const quota = await getQuota({ force: options.force });
   const data = quota[provider];
   if (data.cached) {
-    console.log(formatProviderStatusBlock(data));
+    const authToken = options.showToken
+      ? await loadProviderAuthToken(provider)
+      : undefined;
+    console.log(formatProviderStatusBlock(data, options, authToken));
     return true;
   }
   return false;
 }
 
-export async function statusCodex(options: { force?: boolean } = {}): Promise<boolean> {
+export async function statusCodex(
+  options: StatusCommandOptions = {},
+): Promise<boolean> {
   const creds = await loadCredentials();
   if (!creds) {
     console.error("Codex: not logged in.");
@@ -37,11 +57,15 @@ export async function statusCodex(options: { force?: boolean } = {}): Promise<bo
 
   console.log(DISCLAIMER);
   console.log("");
+  warnIfShowToken(options);
 
   try {
     const fresh = await ensureFreshCredentials(creds);
     const snapshot = await fetchUsage(fresh, { force: options.force });
-    console.log(formatUsageOutput(snapshot, fresh.sourcePath));
+    const authToken = options.showToken ? fresh.accessToken : undefined;
+    console.log(
+      formatUsageOutput(snapshot, fresh.sourcePath, options, authToken),
+    );
     return true;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -53,7 +77,9 @@ export async function statusCodex(options: { force?: boolean } = {}): Promise<bo
   }
 }
 
-export async function statusClaude(options: { force?: boolean } = {}): Promise<boolean> {
+export async function statusClaude(
+  options: StatusCommandOptions = {},
+): Promise<boolean> {
   const creds = await loadClaudeCredentials();
   if (!creds) {
     console.error("Claude: not logged in.");
@@ -65,12 +91,16 @@ export async function statusClaude(options: { force?: boolean } = {}): Promise<b
 
   console.log(CLAUDE_DISCLAIMER);
   console.log("");
+  warnIfShowToken(options);
 
   try {
     const { snapshot, sourcePath } = await fetchClaudeUsage({
       force: options.force,
     });
-    console.log(formatClaudeUsageOutput(snapshot, sourcePath));
+    const authToken = options.showToken ? creds.accessToken : undefined;
+    console.log(
+      formatClaudeUsageOutput(snapshot, sourcePath, options, authToken),
+    );
     return true;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -82,7 +112,9 @@ export async function statusClaude(options: { force?: boolean } = {}): Promise<b
   }
 }
 
-export async function statusCursor(options: { force?: boolean } = {}): Promise<boolean> {
+export async function statusCursor(
+  options: StatusCommandOptions = {},
+): Promise<boolean> {
   const creds = await loadCursorCredentials();
   if (!creds) {
     console.error("Cursor: not logged in.");
@@ -94,12 +126,16 @@ export async function statusCursor(options: { force?: boolean } = {}): Promise<b
 
   console.log(CURSOR_DISCLAIMER);
   console.log("");
+  warnIfShowToken(options);
 
   try {
     const { snapshot, sourcePath } = await fetchCursorUsage({
       force: options.force,
     });
-    console.log(formatCursorUsageOutput(snapshot, sourcePath));
+    const authToken = options.showToken ? creds.sessionToken : undefined;
+    console.log(
+      formatCursorUsageOutput(snapshot, sourcePath, options, authToken),
+    );
     return true;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -111,7 +147,9 @@ export async function statusCursor(options: { force?: boolean } = {}): Promise<b
   }
 }
 
-export async function statusAll(options: { force?: boolean } = {}): Promise<void> {
+export async function statusAll(
+  options: StatusCommandOptions = {},
+): Promise<void> {
   const codexCreds = await loadCredentials();
   const claudeCreds = await loadClaudeCredentials();
   const cursorCreds = await loadCursorCredentials();
@@ -136,12 +174,13 @@ export async function statusAll(options: { force?: boolean } = {}): Promise<void
     console.log(CURSOR_DISCLAIMER);
   }
   console.log("");
+  warnIfShowToken(options);
 
   let anyOk = false;
   let anyFail = false;
 
   const providers: Array<{
-    name: string;
+    name: QuotaProvider;
     hasCreds: boolean;
     run: () => Promise<void>;
   }> = [];
@@ -153,7 +192,10 @@ export async function statusAll(options: { force?: boolean } = {}): Promise<void
       run: async () => {
         const fresh = await ensureFreshCredentials(codexCreds);
         const snapshot = await fetchUsage(fresh, { force: options.force });
-        console.log(formatUsageOutput(snapshot, fresh.sourcePath));
+        const authToken = options.showToken ? fresh.accessToken : undefined;
+        console.log(
+          formatUsageOutput(snapshot, fresh.sourcePath, options, authToken),
+        );
       },
     });
   }
@@ -166,7 +208,10 @@ export async function statusAll(options: { force?: boolean } = {}): Promise<void
         const { snapshot, sourcePath } = await fetchClaudeUsage({
           force: options.force,
         });
-        console.log(formatClaudeUsageOutput(snapshot, sourcePath));
+        const authToken = options.showToken ? claudeCreds.accessToken : undefined;
+        console.log(
+          formatClaudeUsageOutput(snapshot, sourcePath, options, authToken),
+        );
       },
     });
   }
@@ -179,7 +224,10 @@ export async function statusAll(options: { force?: boolean } = {}): Promise<void
         const { snapshot, sourcePath } = await fetchCursorUsage({
           force: options.force,
         });
-        console.log(formatCursorUsageOutput(snapshot, sourcePath));
+        const authToken = options.showToken ? cursorCreds.sessionToken : undefined;
+        console.log(
+          formatCursorUsageOutput(snapshot, sourcePath, options, authToken),
+        );
       },
     });
   }
@@ -192,7 +240,7 @@ export async function statusAll(options: { force?: boolean } = {}): Promise<void
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (parseCooldownSeconds(message) != null) {
-        if (await printCachedStatus(p.name as QuotaProvider, options)) {
+        if (await printCachedStatus(p.name, options)) {
           anyOk = true;
         } else {
           anyFail = true;
