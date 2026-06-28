@@ -1,18 +1,25 @@
 #!/usr/bin/env node
 
 import { dashboardCommand } from "./commands/dashboard.js";
-import { loginClaude, loginCodex } from "./commands/login.js";
+import { loginClaude, loginCodex, loginCursor } from "./commands/login.js";
 import { serveCommand } from "./commands/serve.js";
-import { statusAll, statusClaude, statusCodex } from "./commands/status.js";
+import {
+  statusAll,
+  statusClaude,
+  statusCodex,
+  statusCursor,
+} from "./commands/status.js";
 
 function printLoginHelp(): void {
   console.log(`Usage:
   creditwatcher login codex      OAuth login (stores ~/.creditwatcher/auth.json)
   creditwatcher login claude     Import Claude Code credentials (Keychain or ~/.claude/.credentials.json)
+  creditwatcher login cursor     Import Cursor session from Cursor.app or paste token
 
 npm scripts:
   npm run login:codex            Same as login codex
   npm run login:claude           Same as login claude
+  npm run login:cursor           Same as login cursor
   npm run login                  Show this help`);
 }
 
@@ -21,12 +28,14 @@ function printStatusHelp(): void {
   creditwatcher status           Show all configured providers
   creditwatcher status codex     Show Codex usage limits
   creditwatcher status claude    Show Claude usage limits
+  creditwatcher status cursor    Show Cursor usage limits
   creditwatcher status --force   Bypass 60s usage check cooldown
 
 npm scripts:
   npm run status                 Same as status
   npm run status:codex           Same as status codex
-  npm run status:claude          Same as status claude`);
+  npm run status:claude          Same as status claude
+  npm run status:cursor          Same as status cursor`);
 }
 
 function printDashboardHelp(): void {
@@ -48,13 +57,15 @@ npm scripts:
 }
 
 function printHelp(): void {
-  console.log(`creditwatcher — check Codex and Claude usage limits safely
+  console.log(`creditwatcher — check Codex, Claude, and Cursor usage limits safely
 
 Usage:
   creditwatcher login codex      OAuth login (stores ~/.creditwatcher/auth.json)
   creditwatcher login claude     Import ~/.claude/.credentials.json (or Keychain)
+  creditwatcher login cursor     Import Cursor session from Cursor.app
   creditwatcher status codex     Show Codex usage limits
   creditwatcher status claude    Show Claude usage limits
+  creditwatcher status cursor    Show Cursor usage limits
   creditwatcher dashboard        Rich terminal dashboard (all providers)
   creditwatcher dashboard --force  Bypass 60s usage check cooldown
   creditwatcher status           Show all configured providers
@@ -66,10 +77,13 @@ Environment:
   CREDITWATCHER_OAUTH_PORT       OAuth callback port for Codex (default: 1455)
   CODEX_HOME                     Path to Codex config (default: ~/.codex)
   CLAUDE_CONFIG_DIR              Path to Claude config (default: ~/.claude)
+  CURSOR_SESSION_TOKEN           Cursor WorkosCursorSessionToken (sub::jwt)
+  CURSOR_STATE_DB                Override path to Cursor state.vscdb
 
 Safety:
   Read-only usage endpoints only. Tokens stay local. No inference proxying.
-  Prefer official CLIs: \`codex login\`, \`claude\` sign-in.
+  Prefer official CLIs: \`codex login\`, \`claude\` sign-in, Cursor app sign-in.
+  Cursor uses unofficial read-only cursor.com endpoints — use at your own risk.
 `);
 }
 
@@ -101,9 +115,11 @@ async function main(): Promise<void> {
           await loginCodex();
         } else if (provider === "claude") {
           await loginClaude();
+        } else if (provider === "cursor") {
+          await loginCursor();
         } else {
           console.error(
-            `Unknown provider: ${provider}. Use: login codex | login claude`,
+            `Unknown provider: ${provider}. Use: login codex | login claude | login cursor`,
           );
           printLoginHelp();
           process.exitCode = 1;
@@ -118,6 +134,9 @@ async function main(): Promise<void> {
           if (!ok) process.exitCode = 1;
         } else if (provider === "claude") {
           const ok = await statusClaude({ force });
+          if (!ok) process.exitCode = 1;
+        } else if (provider === "cursor") {
+          const ok = await statusCursor({ force });
           if (!ok) process.exitCode = 1;
         } else {
           console.error(`Unknown provider: ${provider}`);

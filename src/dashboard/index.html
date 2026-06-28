@@ -84,8 +84,8 @@
     }
 
     .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      display: flex;
+      flex-direction: column;
       gap: 1.25rem;
     }
 
@@ -322,7 +322,8 @@
     }
 
     function renderProvider(name, p) {
-      const title = name === "codex" ? "Codex" : "Claude";
+      const title =
+        name === "codex" ? "Codex" : name === "claude" ? "Claude" : "Cursor";
       const plan = p.plan || p.account || "—";
       const alerts = [];
       const refreshNotice = formatRefreshNotice(p);
@@ -388,6 +389,7 @@
       cardsEl.innerHTML = [
         renderProvider("codex", data.codex),
         renderProvider("claude", data.claude),
+        renderProvider("cursor", data.cursor),
       ].join("");
 
       statusLine.textContent = "Updated " + formatTime(data.fetchedAt);

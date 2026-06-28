@@ -4,16 +4,20 @@ import { loadCredentials } from "../auth/storage.js";
 import { CLAUDE_DISCLAIMER } from "../claude/constants.js";
 import { fetchClaudeUsage, formatClaudeUsageOutput } from "../claude/usage.js";
 import { loadClaudeCredentials } from "../claude/storage.js";
+import { CURSOR_DISCLAIMER } from "../cursor/constants.js";
+import { fetchCursorUsage, formatCursorUsageOutput } from "../cursor/usage.js";
+import { loadCursorCredentials } from "../cursor/storage.js";
 import { fetchUsage, formatUsageOutput } from "../codex/usage.js";
 import { formatProviderStatusBlock } from "../dashboard/terminal.js";
 import { getQuota, parseCooldownSeconds } from "../server/quota.js";
+import type { QuotaProvider } from "../server/quota-cache.js";
 
 async function printCachedStatus(
-  provider: "codex" | "claude",
+  provider: QuotaProvider,
   options: { force?: boolean },
 ): Promise<boolean> {
   const quota = await getQuota({ force: options.force });
-  const data = provider === "codex" ? quota.codex : quota.claude;
+  const data = quota[provider];
   if (data.cached) {
     console.log(formatProviderStatusBlock(data));
     return true;
@@ -78,16 +82,49 @@ export async function statusClaude(options: { force?: boolean } = {}): Promise<b
   }
 }
 
+export async function statusCursor(options: { force?: boolean } = {}): Promise<boolean> {
+  const creds = await loadCursorCredentials();
+  if (!creds) {
+    console.error("Cursor: not logged in.");
+    console.error(
+      "  Sign in to the Cursor app, or run `creditwatcher login cursor`",
+    );
+    return false;
+  }
+
+  console.log(CURSOR_DISCLAIMER);
+  console.log("");
+
+  try {
+    const { snapshot, sourcePath } = await fetchCursorUsage({
+      force: options.force,
+    });
+    console.log(formatCursorUsageOutput(snapshot, sourcePath));
+    return true;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (parseCooldownSeconds(message) != null) {
+      return (await printCachedStatus("cursor", options)) || false;
+    }
+    console.error(`Cursor: ${message}`);
+    return false;
+  }
+}
+
 export async function statusAll(options: { force?: boolean } = {}): Promise<void> {
   const codexCreds = await loadCredentials();
   const claudeCreds = await loadClaudeCredentials();
+  const cursorCreds = await loadCursorCredentials();
 
-  if (!codexCreds && !claudeCreds) {
+  if (!codexCreds && !claudeCreds && !cursorCreds) {
     console.error("Not logged in to any provider.");
     console.error("");
     console.error("Codex: `codex login` or `creditwatcher login codex`");
     console.error(
       "Claude: `claude` sign-in or `creditwatcher login claude`",
+    );
+    console.error(
+      "Cursor: sign in to Cursor app or `creditwatcher login cursor`",
     );
     process.exitCode = 1;
     return;
@@ -95,55 +132,78 @@ export async function statusAll(options: { force?: boolean } = {}): Promise<void
 
   console.log(DISCLAIMER);
   console.log(CLAUDE_DISCLAIMER);
+  if (cursorCreds) {
+    console.log(CURSOR_DISCLAIMER);
+  }
   console.log("");
 
   let anyOk = false;
   let anyFail = false;
 
+  const providers: Array<{
+    name: string;
+    hasCreds: boolean;
+    run: () => Promise<void>;
+  }> = [];
+
   if (codexCreds) {
-    try {
-      const fresh = await ensureFreshCredentials(codexCreds);
-      const snapshot = await fetchUsage(fresh, { force: options.force });
-      console.log(formatUsageOutput(snapshot, fresh.sourcePath));
-      anyOk = true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (parseCooldownSeconds(message) != null) {
-        if (await printCachedStatus("codex", options)) {
-          anyOk = true;
-        } else {
-          anyFail = true;
-          console.error(`Codex: ${message}`);
-        }
-      } else {
-        anyFail = true;
-        console.error(`Codex: ${message}`);
-      }
-    }
-    if (claudeCreds) console.log("");
+    providers.push({
+      name: "codex",
+      hasCreds: true,
+      run: async () => {
+        const fresh = await ensureFreshCredentials(codexCreds);
+        const snapshot = await fetchUsage(fresh, { force: options.force });
+        console.log(formatUsageOutput(snapshot, fresh.sourcePath));
+      },
+    });
   }
 
   if (claudeCreds) {
+    providers.push({
+      name: "claude",
+      hasCreds: true,
+      run: async () => {
+        const { snapshot, sourcePath } = await fetchClaudeUsage({
+          force: options.force,
+        });
+        console.log(formatClaudeUsageOutput(snapshot, sourcePath));
+      },
+    });
+  }
+
+  if (cursorCreds) {
+    providers.push({
+      name: "cursor",
+      hasCreds: true,
+      run: async () => {
+        const { snapshot, sourcePath } = await fetchCursorUsage({
+          force: options.force,
+        });
+        console.log(formatCursorUsageOutput(snapshot, sourcePath));
+      },
+    });
+  }
+
+  for (let i = 0; i < providers.length; i++) {
+    const p = providers[i];
     try {
-      const { snapshot, sourcePath } = await fetchClaudeUsage({
-        force: options.force,
-      });
-      console.log(formatClaudeUsageOutput(snapshot, sourcePath));
+      await p.run();
       anyOk = true;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (parseCooldownSeconds(message) != null) {
-        if (await printCachedStatus("claude", options)) {
+        if (await printCachedStatus(p.name as QuotaProvider, options)) {
           anyOk = true;
         } else {
           anyFail = true;
-          console.error(`Claude: ${message}`);
+          console.error(`${p.name}: ${message}`);
         }
       } else {
         anyFail = true;
-        console.error(`Claude: ${message}`);
+        console.error(`${p.name}: ${message}`);
       }
     }
+    if (i < providers.length - 1) console.log("");
   }
 
   if (!anyOk) {

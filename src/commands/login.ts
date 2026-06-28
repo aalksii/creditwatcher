@@ -7,6 +7,15 @@ import {
   importClaudeCredentials,
   loadClaudeCredentials,
 } from "../claude/storage.js";
+import { CURSOR_DISCLAIMER } from "../cursor/constants.js";
+import { fetchCursorUsage } from "../cursor/usage.js";
+import {
+  importCursorCredentials,
+  loadCursorCredentials,
+  saveCursorCredentialsCopy,
+} from "../cursor/storage.js";
+import * as readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 
 export async function loginCodex(): Promise<void> {
   console.log(DISCLAIMER);
@@ -56,6 +65,66 @@ function formatClaudeVerifyOutput(
     "✓ Claude credentials verified",
     `  Auth: ${sourcePath}`,
     `  Plan: ${plan}`,
+    `  Usage windows: ${snapshot.windows.length}`,
+  ];
+  return lines.join("\n");
+}
+
+export async function loginCursor(): Promise<void> {
+  console.log(CURSOR_DISCLAIMER);
+  console.log("");
+  console.log(
+    "Importing session from Cursor app (state.vscdb) or CURSOR_SESSION_TOKEN...",
+  );
+  console.log("");
+
+  let existing = await loadCursorCredentials();
+  if (!existing) {
+    const rl = readline.createInterface({ input, output });
+    try {
+      const pasted = (
+        await rl.question(
+          "Paste WorkosCursorSessionToken (or press Enter to skip): ",
+        )
+      ).trim();
+      if (pasted) {
+        const saved = await saveCursorCredentialsCopy({
+          sessionToken: pasted,
+          sourcePath: "manual paste",
+        });
+        existing = saved;
+      }
+    } finally {
+      rl.close();
+    }
+  }
+
+  if (!existing) {
+    throw new Error(
+      "No Cursor session found. Sign in to the Cursor app, set CURSOR_SESSION_TOKEN, or paste a session token.",
+    );
+  }
+
+  console.log(`  Found: ${existing.sourcePath}`);
+  const creds = await importCursorCredentials();
+  console.log(`  Source: ${creds.sourcePath}`);
+
+  console.log("Verifying with a test usage request...");
+  const { snapshot, sourcePath } = await fetchCursorUsage({ force: true });
+  console.log(formatCursorVerifyOutput(snapshot, sourcePath));
+}
+
+function formatCursorVerifyOutput(
+  snapshot: { membershipType?: string; email?: string; windows: unknown[] },
+  sourcePath: string,
+): string {
+  const plan = snapshot.membershipType ?? "Cursor";
+  const account = snapshot.email ? ` (${snapshot.email})` : "";
+  const lines = [
+    "",
+    "✓ Cursor credentials verified",
+    `  Auth: ${sourcePath}`,
+    `  Plan: ${plan}${account}`,
     `  Usage windows: ${snapshot.windows.length}`,
   ];
   return lines.join("\n");

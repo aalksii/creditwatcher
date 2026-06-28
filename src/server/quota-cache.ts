@@ -5,9 +5,12 @@ import type { ProviderQuota } from "./quota.js";
 
 const CACHE_DIR = join(homedir(), ".creditwatcher");
 
-const CACHE_FILES: Record<"codex" | "claude", string> = {
+export type QuotaProvider = "codex" | "claude" | "cursor";
+
+const CACHE_FILES: Record<QuotaProvider, string> = {
   codex: join(CACHE_DIR, "quota-cache-codex.json"),
   claude: join(CACHE_DIR, "quota-cache-claude.json"),
+  cursor: join(CACHE_DIR, "quota-cache-cursor.json"),
 };
 
 export interface QuotaCacheEntry {
@@ -16,7 +19,7 @@ export interface QuotaCacheEntry {
 }
 
 export async function loadQuotaCache(
-  provider: "codex" | "claude",
+  provider: QuotaProvider,
 ): Promise<QuotaCacheEntry | null> {
   try {
     const raw = await readFile(CACHE_FILES[provider], "utf8");
@@ -27,7 +30,7 @@ export async function loadQuotaCache(
 }
 
 export async function saveQuotaCache(
-  provider: "codex" | "claude",
+  provider: QuotaProvider,
   data: ProviderQuota,
 ): Promise<void> {
   await mkdir(CACHE_DIR, { recursive: true, mode: 0o700 });

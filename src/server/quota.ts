@@ -3,9 +3,16 @@ import { loadCredentials } from "../auth/storage.js";
 import { fetchClaudeUsage } from "../claude/usage.js";
 import { loadClaudeCredentials } from "../claude/storage.js";
 import { fetchUsage } from "../codex/usage.js";
+import { fetchCursorUsage } from "../cursor/usage.js";
+import type { CursorUsageSnapshot } from "../cursor/usage.js";
+import { loadCursorCredentials } from "../cursor/storage.js";
 import type { UsageSnapshot, WindowSnapshot } from "../types.js";
 import type { ClaudeUsageSnapshot } from "../claude/usage.js";
-import { loadQuotaCache, saveQuotaCache } from "./quota-cache.js";
+import {
+  loadQuotaCache,
+  saveQuotaCache,
+  type QuotaProvider,
+} from "./quota-cache.js";
 
 export interface QuotaWindow {
   label: string;
@@ -17,7 +24,7 @@ export interface QuotaWindow {
 
 export interface ProviderQuota {
   status: "ok" | "not_connected" | "error" | "cooldown";
-  provider: "codex" | "claude";
+  provider: QuotaProvider;
   plan?: string;
   account?: string;
   authSource?: string;
@@ -40,6 +47,7 @@ export interface ProviderQuota {
 export interface QuotaResponse {
   codex: ProviderQuota;
   claude: ProviderQuota;
+  cursor: ProviderQuota;
   fetchedAt: string;
 }
 
@@ -48,7 +56,7 @@ interface CachedProvider {
   fetchedAt: number;
 }
 
-const cache: Partial<Record<"codex" | "claude", CachedProvider>> = {};
+const cache: Partial<Record<QuotaProvider, CachedProvider>> = {};
 
 export function parseCooldownSeconds(message: string): number | undefined {
   const match = message.match(/Wait (\d+)s before/);
@@ -125,13 +133,48 @@ function claudeFromSnapshot(
   };
 }
 
-function notConnected(
-  provider: "codex" | "claude",
-): ProviderQuota {
-  const loginHint =
-    provider === "codex"
-      ? "Run `codex login` or `creditwatcher login codex`"
-      : "Run `claude` to sign in, or `creditwatcher login claude`";
+function cursorFromSnapshot(
+  snapshot: CursorUsageSnapshot,
+  sourcePath: string,
+): Omit<ProviderQuota, "status" | "provider"> {
+  const windows: QuotaWindow[] = snapshot.windows.map((w) => ({
+    label: w.label,
+    usedPercent: w.usedPercent,
+    remainingPercent: 100 - w.usedPercent,
+    resetAt: w.resetsAt?.toISOString(),
+    resetAfterSeconds: w.resetsAt
+      ? Math.max(0, Math.floor((w.resetsAt.getTime() - Date.now()) / 1000))
+      : undefined,
+  }));
+
+  const credits =
+    snapshot.onDemandUsedCents != null
+      ? {
+          balance: `$${(snapshot.onDemandUsedCents / 100).toFixed(2)}`,
+          hasCredits: true,
+          unlimited: snapshot.isUnlimited,
+        }
+      : undefined;
+
+  return {
+    plan: snapshot.membershipType,
+    account: snapshot.email,
+    authSource: sourcePath,
+    windows,
+    credits,
+    warnings: snapshot.warnings,
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+function notConnected(provider: QuotaProvider): ProviderQuota {
+  const loginHints: Record<QuotaProvider, string> = {
+    codex: "Run `codex login` or `creditwatcher login codex`",
+    claude: "Run `claude` to sign in, or `creditwatcher login claude`",
+    cursor:
+      "Sign in to Cursor app, or `creditwatcher login cursor`",
+  };
+  const loginHint = loginHints[provider];
 
   return {
     status: "not_connected",
@@ -142,7 +185,7 @@ function notConnected(
   };
 }
 
-async function ensureMemoryCache(provider: "codex" | "claude"): Promise<void> {
+async function ensureMemoryCache(provider: QuotaProvider): Promise<void> {
   if (cache[provider]) return;
   const entry = await loadQuotaCache(provider);
   if (entry) {
@@ -151,14 +194,14 @@ async function ensureMemoryCache(provider: "codex" | "claude"): Promise<void> {
 }
 
 async function resolveCachedData(
-  provider: "codex" | "claude",
+  provider: QuotaProvider,
 ): Promise<ProviderQuota | undefined> {
   await ensureMemoryCache(provider);
   return cache[provider]?.data;
 }
 
 async function withCache(
-  provider: "codex" | "claude",
+  provider: QuotaProvider,
   data: ProviderQuota,
 ): Promise<ProviderQuota> {
   cache[provider] = { data, fetchedAt: Date.now() };
@@ -167,7 +210,7 @@ async function withCache(
 }
 
 function cooldownQuota(
-  provider: "codex" | "claude",
+  provider: QuotaProvider,
   cached: ProviderQuota,
   cooldownSeconds: number,
 ): ProviderQuota {
@@ -187,7 +230,7 @@ function cooldownQuota(
 }
 
 async function cachedOrError(
-  provider: "codex" | "claude",
+  provider: QuotaProvider,
   err: unknown,
 ): Promise<ProviderQuota> {
   const message = err instanceof Error ? err.message : String(err);
@@ -265,17 +308,36 @@ async function fetchClaudeQuota(force: boolean): Promise<ProviderQuota> {
   }
 }
 
+async function fetchCursorQuota(force: boolean): Promise<ProviderQuota> {
+  await ensureMemoryCache("cursor");
+  const creds = await loadCursorCredentials();
+  if (!creds) return notConnected("cursor");
+
+  try {
+    const { snapshot, sourcePath } = await fetchCursorUsage({ force });
+    return await withCache("cursor", {
+      status: "ok",
+      provider: "cursor",
+      ...cursorFromSnapshot(snapshot, sourcePath),
+    });
+  } catch (err) {
+    return cachedOrError("cursor", err);
+  }
+}
+
 export async function getQuota(options: {
   force?: boolean;
 } = {}): Promise<QuotaResponse> {
-  const [codex, claude] = await Promise.all([
+  const [codex, claude, cursor] = await Promise.all([
     fetchCodexQuota(options.force ?? false),
     fetchClaudeQuota(options.force ?? false),
+    fetchCursorQuota(options.force ?? false),
   ]);
 
   return {
     codex,
     claude,
+    cursor,
     fetchedAt: new Date().toISOString(),
   };
 }

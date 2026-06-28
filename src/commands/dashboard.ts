@@ -9,7 +9,8 @@ export async function dashboardCommand(
 
   const anyConnected =
     quota.codex.status !== "not_connected" ||
-    quota.claude.status !== "not_connected";
+    quota.claude.status !== "not_connected" ||
+    quota.cursor.status !== "not_connected";
 
   if (!anyConnected) {
     process.exitCode = 1;

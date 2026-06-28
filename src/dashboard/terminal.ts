@@ -3,6 +3,7 @@ import type { ProviderQuota, QuotaResponse } from "../server/quota.js";
 import { formatDuration, progressBar } from "../utils.js";
 
 const BOX_WIDTH = 68;
+const CONTENT_INDENT = 2;
 
 const ANSI = {
   reset: "\x1b[0m",
@@ -60,6 +61,10 @@ function shortWindowLabel(label: string): string {
       return "7dS";
     case "7-day Opus":
       return "7dO";
+    case "included":
+      return "inc";
+    case "on-demand":
+      return "od";
     default:
       return label.length <= 4 ? label : label.slice(0, 4);
   }
@@ -71,8 +76,21 @@ function truncate(text: string, max: number): string {
   return `${text.slice(0, max - 1)}…`;
 }
 
+function providerDisplayName(provider: ProviderQuota["provider"]): string {
+  switch (provider) {
+    case "codex":
+      return "Codex";
+    case "claude":
+      return "Claude";
+    case "cursor":
+      return "Cursor";
+    default:
+      return provider;
+  }
+}
+
 function providerTitle(provider: ProviderQuota): string {
-  const name = provider.provider === "codex" ? "Codex" : "Claude";
+  const name = providerDisplayName(provider.provider);
   if (provider.status === "not_connected") {
     return c(ANSI.dim, `${name} — not connected`);
   }
@@ -114,40 +132,51 @@ function formatWindowLine(
   let line = `${label} ${bar} ${pct}`;
 
   if (w.resetAfterSeconds != null && w.resetAfterSeconds > 0) {
-    line += c(ANSI.dim, ` ↻${formatDuration(w.resetAfterSeconds)}`);
+    line += c(ANSI.dim, ` ↻ ${formatDuration(w.resetAfterSeconds)}`);
   }
 
   return line;
 }
 
-function providerBody(provider: ProviderQuota, colWidth: number): string[] {
+function contentWidth(): number {
+  return BOX_WIDTH - 2 - CONTENT_INDENT;
+}
+
+function boxLine(text: string): string {
+  const width = contentWidth();
+  const inner = BOX_WIDTH - 2;
+  const padded = truncate(text, width).padEnd(width);
+  return `│${" ".repeat(CONTENT_INDENT)}${padded}${" ".repeat(Math.max(0, inner - CONTENT_INDENT - width))}│`;
+}
+
+function emptyBoxLine(): string {
+  return `│${" ".repeat(BOX_WIDTH - 2)}│`;
+}
+
+function providerBody(provider: ProviderQuota): string[] {
   const lines: string[] = [];
+  const width = contentWidth();
   const dimmed = provider.cached === true;
 
   if (provider.status === "not_connected") {
-    lines.push(c(ANSI.dim, truncate(provider.loginHint ?? "Not logged in", colWidth)));
+    lines.push(c(ANSI.dim, truncate(provider.loginHint ?? "Not logged in", width)));
     return lines;
   }
 
   if (provider.authSource) {
     lines.push(
-      c(ANSI.dim, truncate(`Auth: ${shortenPath(provider.authSource)}`, colWidth)),
+      c(ANSI.dim, truncate(`Auth: ${shortenPath(provider.authSource)}`, width)),
     );
   }
 
-  const refreshNotice = formatRefreshNotice(provider);
-  if (refreshNotice) {
-    lines.push(c(ANSI.dim, truncate(refreshNotice, colWidth)));
-  }
-
   if (provider.status === "error" && provider.error) {
-    lines.push(c(ANSI.yellow, truncate(provider.error, colWidth)));
+    lines.push(c(ANSI.yellow, truncate(provider.error, width)));
   } else if (
     provider.status === "cooldown" &&
     provider.error &&
     !provider.cached
   ) {
-    lines.push(c(ANSI.yellow, truncate(provider.error, colWidth)));
+    lines.push(c(ANSI.yellow, truncate(provider.error, width)));
   }
 
   if (provider.windows.length === 0) {
@@ -158,7 +187,7 @@ function providerBody(provider: ProviderQuota, colWidth: number): string[] {
   }
 
   for (const w of provider.windows) {
-    lines.push(truncate(formatWindowLine(w, dimmed), colWidth));
+    lines.push(truncate(formatWindowLine(w, dimmed), width));
   }
 
   if (provider.credits?.hasCredits || provider.credits?.balance) {
@@ -169,28 +198,31 @@ function providerBody(provider: ProviderQuota, colWidth: number): string[] {
           ? `Credits: ${provider.credits.balance}`
           : "Credits: available";
     lines.push(
-      c(dimmed ? ANSI.dim : ANSI.cyan, truncate(credits, colWidth)),
+      c(dimmed ? ANSI.dim : ANSI.cyan, truncate(credits, width)),
     );
   }
 
   for (const warning of provider.warnings) {
-    lines.push(c(ANSI.yellow, truncate(`⚠ ${warning}`, colWidth)));
+    lines.push(c(ANSI.yellow, truncate(`⚠ ${warning}`, width)));
   }
 
   return lines;
 }
 
-function joinColumns(left: string[], right: string[], colWidth: number): string[] {
-  const rows = Math.max(left.length, right.length);
-  const out: string[] = [];
+function renderProviderSection(provider: ProviderQuota): string[] {
+  const lines = [providerTitle(provider), ...providerBody(provider)];
+  return lines.map((line) => boxLine(line));
+}
 
-  for (let i = 0; i < rows; i++) {
-    const l = (left[i] ?? "").padEnd(colWidth);
-    const r = (right[i] ?? "").padEnd(colWidth);
-    out.push(`│ ${l} │ ${r} │`);
-  }
+function getProviders(quota: QuotaResponse): ProviderQuota[] {
+  return [quota.codex, quota.claude, quota.cursor];
+}
 
-  return out;
+function minSecondsUntilRefresh(providers: ProviderQuota[]): number | undefined {
+  const values = providers
+    .map((p) => p.secondsUntilRefresh ?? p.cooldownSeconds)
+    .filter((s): s is number => s != null && s > 0);
+  return values.length > 0 ? Math.min(...values) : undefined;
 }
 
 function topBorder(title: string): string {
@@ -203,12 +235,15 @@ function bottomBorder(): string {
   return `└${"─".repeat(BOX_WIDTH)}┘`;
 }
 
-function headerRow(left: string, right: string, colWidth: number): string {
-  return `│ ${left.padEnd(colWidth)} │ ${right.padEnd(colWidth)} │`;
+function providerSeparator(): string {
+  const width = contentWidth();
+  const inner = BOX_WIDTH - 2;
+  const dashes = "─".repeat(width);
+  return `│${" ".repeat(CONTENT_INDENT)}${dashes}${" ".repeat(Math.max(0, inner - CONTENT_INDENT - width))}│`;
 }
 
 export function formatProviderStatusBlock(provider: ProviderQuota): string {
-  const name = provider.provider === "codex" ? "Codex" : "Claude";
+  const name = providerDisplayName(provider.provider);
   const plan = provider.plan ?? "unknown";
   const cachedLabel = provider.cached ? " (cached)" : "";
   const lines: string[] = [`${name} usage — ${plan}${cachedLabel}`];
@@ -256,26 +291,32 @@ export function formatProviderStatusBlock(provider: ProviderQuota): string {
 }
 
 export function renderDashboard(quota: QuotaResponse): string {
-  const inner = BOX_WIDTH - 2;
-  const colWidth = Math.floor((inner - 3) / 2);
-
-  const leftTitle = providerTitle(quota.codex);
-  const rightTitle = providerTitle(quota.claude);
-  const leftBody = providerBody(quota.codex, colWidth);
-  const rightBody = providerBody(quota.claude, colWidth);
-
-  const lines: string[] = [
+  const providers = getProviders(quota);
+  const sections: string[] = [
     topBorder("CreditWatcher"),
-    headerRow(leftTitle, rightTitle, colWidth),
-    ...joinColumns(leftBody, rightBody, colWidth),
-    bottomBorder(),
+    emptyBoxLine(),
   ];
 
-  const updated = c(
-    ANSI.dim,
-    `Updated ${new Date(quota.fetchedAt).toLocaleTimeString()}`,
-  );
-  lines.push(updated);
+  for (let i = 0; i < providers.length; i++) {
+    if (i > 0) {
+      sections.push(emptyBoxLine());
+      sections.push(providerSeparator());
+      sections.push(emptyBoxLine());
+    }
+    sections.push(...renderProviderSection(providers[i]));
+  }
 
-  return lines.join("\n");
+  sections.push(emptyBoxLine());
+  sections.push(bottomBorder());
+
+  const updated = `Updated ${new Date(quota.fetchedAt).toLocaleTimeString()}`;
+  const refreshSeconds = minSecondsUntilRefresh(providers);
+  const footer =
+    refreshSeconds != null
+      ? `${updated} · Next refresh in ${formatDuration(refreshSeconds)}`
+      : updated;
+
+  sections.push(c(ANSI.dim, footer));
+
+  return sections.join("\n");
 }
