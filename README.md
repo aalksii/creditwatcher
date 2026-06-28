@@ -18,13 +18,14 @@ Then run e.g. `creditwatcher status codex`.
 
 ```bash
 npm install
-npm run status          # all providers (uses tsx)
+npm run dashboard       # rich terminal dashboard (all providers)
+npm run status          # detailed text output per provider
 npm run status:codex    # Codex only
 npm run status:claude   # Claude only
 npm run login           # show login help
 npm run login:codex     # Codex OAuth → ~/.creditwatcher/auth.json
 npm run login:claude    # import Claude Code credentials
-npm run serve           # local dashboard at http://127.0.0.1:9477
+npm run serve           # optional web UI at http://127.0.0.1:9477
 ```
 
 **One-off** (if published or with `bin` set locally after build):
@@ -42,23 +43,36 @@ npx creditwatcher status codex
 | `creditwatcher login claude` | Import credentials from Claude Code (Keychain or `~/.claude/.credentials.json`) |
 | `creditwatcher status codex` | Show Codex usage limits |
 | `creditwatcher status claude` | Show Claude 5h / 7d utilization |
+| `creditwatcher dashboard` | Rich terminal dashboard — Codex and Claude side by side |
+| `creditwatcher dashboard --force` | Skip the 60-second usage cooldown |
 | `creditwatcher status` | Show all providers with credentials configured |
 | `creditwatcher status --force` | Skip the 60-second usage cooldown |
-| `creditwatcher serve` | Local web dashboard at http://127.0.0.1:9477 |
-| `creditwatcher serve --port 3000` | Dashboard on a custom port |
+| `creditwatcher serve` | Optional local web UI at http://127.0.0.1:9477 |
+| `creditwatcher serve --port 3000` | Web UI on a custom port |
 
 
 ## Dashboard
 
-Start a local-only web UI to view Codex and Claude limits side by side:
+The primary way to view usage is the **CLI dashboard** — a compact terminal view with color-coded progress bars:
+
+```bash
+npm run dashboard
+# or: creditwatcher dashboard
+# or: creditwatcher dashboard --force   # bypass 60s cooldown
+```
+
+Shows Codex and Claude side by side: plan name, auth source, usage windows (5h / weekly / 7d), reset countdown, and Codex credits. Color coding: green below 70%, yellow 70–90%, red above 90%.
+
+### Optional web UI
+
+For a browser-based view (future/experimental):
 
 ```bash
 npm run serve
-# or: creditwatcher serve
 # or: creditwatcher serve --port 3000
 ```
 
-Open **http://127.0.0.1:9477** in your browser. The server binds to `127.0.0.1` only — no external access, no tokens in API responses. Auto-refreshes every 60 seconds (respects usage cooldowns). Use **Refresh** for a manual update (may show cached data if within the 60s cooldown).
+Open **http://127.0.0.1:9477**. Binds to `127.0.0.1` only — no external access, no tokens in API responses.
 
 ## Claude Code setup
 
@@ -195,7 +209,20 @@ Matches the official Codex CLI (verified from openresponses/codex and opencode s
 
 ## Example output
 
+### Dashboard
+
 ```
+┌─ CreditWatcher ──────────────────────────────────────────────────┐
+│ Codex (plus)                     │ Claude (max)                  │
+│ Auth: ~/.codex/auth.json         │ Auth: ~/.claude/.credentials… │
+│ 5h  ████░░░░░░ 33% ↻2h 15m       │ 5h  ████░░░░░░ 42% ↻1h 12m   │
+│ wk  ██░░░░░░░░ 12% ↻5d 3h        │ 7d  █░░░░░░░░░  8% ↻4d 6h   │
+│ Credits: $42.00                  │                               │
+└──────────────────────────────────────────────────────────────────┘
+Updated 3:42:15 PM
+```
+
+### Status (detailed)
 ⚠️  Safety notice: creditwatcher only reads your usage limits via GET /wham/usage.
    Tokens stay on your machine. No inference proxying. Use at your own risk.
    Prefer logging in with the official `codex login` and reading ~/.codex/auth.json.

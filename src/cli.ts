@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { dashboardCommand } from "./commands/dashboard.js";
 import { loginClaude, loginCodex } from "./commands/login.js";
 import { serveCommand } from "./commands/serve.js";
 import { statusAll, statusClaude, statusCodex } from "./commands/status.js";
@@ -28,9 +29,18 @@ npm scripts:
   npm run status:claude          Same as status claude`);
 }
 
+function printDashboardHelp(): void {
+  console.log(`Usage:
+  creditwatcher dashboard           Rich terminal view of all providers
+  creditwatcher dashboard --force   Bypass 60s usage check cooldown
+
+npm scripts:
+  npm run dashboard                 Same as dashboard`);
+}
+
 function printServeHelp(): void {
   console.log(`Usage:
-  creditwatcher serve              Start local dashboard at http://127.0.0.1:9477
+  creditwatcher serve              Optional web UI at http://127.0.0.1:9477
   creditwatcher serve --port 3000  Use a custom port
 
 npm scripts:
@@ -45,10 +55,12 @@ Usage:
   creditwatcher login claude     Import ~/.claude/.credentials.json (or Keychain)
   creditwatcher status codex     Show Codex usage limits
   creditwatcher status claude    Show Claude usage limits
+  creditwatcher dashboard        Rich terminal dashboard (all providers)
+  creditwatcher dashboard --force  Bypass 60s usage check cooldown
   creditwatcher status           Show all configured providers
   creditwatcher status --force   Bypass 60s usage check cooldown
-  creditwatcher serve            Local web dashboard (127.0.0.1:9477)
-  creditwatcher serve --port N   Dashboard on custom port
+  creditwatcher serve            Optional web UI (127.0.0.1:9477)
+  creditwatcher serve --port N   Web UI on custom port
 
 Environment:
   CREDITWATCHER_OAUTH_PORT       OAuth callback port for Codex (default: 1455)
@@ -113,6 +125,19 @@ async function main(): Promise<void> {
           process.exitCode = 1;
         }
         break;
+
+      case "dashboard": {
+        const dashArgs = args.filter((a) => !a.startsWith("-") && a !== "dashboard");
+        if (dashArgs.length > 0) {
+          console.error(`Ignoring extra argument(s): ${dashArgs.join(", ")}`);
+        }
+        if (args.includes("--help")) {
+          printDashboardHelp();
+          break;
+        }
+        await dashboardCommand({ force });
+        break;
+      }
 
       case "serve": {
         const serveArgs = args.filter((a) => !a.startsWith("-") && a !== "serve");
