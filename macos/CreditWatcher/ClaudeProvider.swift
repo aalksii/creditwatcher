@@ -54,6 +54,10 @@ enum ClaudeAuth {
         }
     }
 
+    static func forgetCopy() {
+        try? FileManager.default.removeItem(at: copyPath)
+    }
+
     private static func expiryMs(_ creds: ClaudeCredentials) -> TimeInterval {
         if let jwt = JWTHelpers.expirationDate(creds.accessToken) { return jwt.timeIntervalSince1970 }
         return creds.expiresAt?.timeIntervalSince1970 ?? 0

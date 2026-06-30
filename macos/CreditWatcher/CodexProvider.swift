@@ -28,6 +28,10 @@ enum CodexAuth {
         return nil
     }
 
+    static func forgetCopy() {
+        try? FileManager.default.removeItem(at: creditwatcherAuthPath)
+    }
+
     private static func load(from url: URL) -> CodexCredentials? {
         guard let data = try? Data(contentsOf: url),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

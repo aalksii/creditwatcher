@@ -40,30 +40,19 @@ struct ProviderCardView: View {
     private var content: some View {
         switch provider.status {
         case "not_connected":
-            if showsClaudeSignIn {
-                claudeSignInSection
-            } else {
-                Text(provider.loginHint ?? "Not connected")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            signInHelp
         case "cooldown":
             if provider.windows.isEmpty {
                 Text(provider.error ?? "On cooldown")
                     .font(.caption)
                     .foregroundStyle(.orange)
-                if showsClaudeSignIn {
-                    claudeSignInSection
-                }
+                signInHelp
             } else {
                 windowRows
                 if let seconds = provider.secondsUntilRefresh {
                     Text("Refresh in \(formatDuration(seconds: seconds))")
                         .font(.caption2)
                         .foregroundStyle(.orange)
-                }
-                if showsClaudeSignIn {
-                    claudeSignInSection
                 }
             }
         case "error":
@@ -73,9 +62,7 @@ struct ProviderCardView: View {
             Text(provider.error ?? "Error fetching usage")
                 .font(.caption)
                 .foregroundStyle(.red)
-            if showsClaudeSignIn {
-                claudeSignInSection
-            }
+            signInHelp
         default:
             windowRows
             if let credits = provider.credits?.balance {
@@ -91,43 +78,29 @@ struct ProviderCardView: View {
         }
     }
 
-    private var showsClaudeSignIn: Bool {
-        guard provider.id == "claude" else { return false }
-        if ClaudeAuth.loadCandidates().isEmpty {
-            return true
-        }
-        switch provider.status {
-        case "not_connected", "error":
-            return true
-        default:
-            return false
-        }
-    }
-
     @ViewBuilder
-    private var claudeSignInSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(claudeSignInPrompt)
+    private var signInHelp: some View {
+        if let hint = provider.loginHint ?? defaultLoginHint {
+            Text(hint)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-
-            Button("Import Claude credentials") {
-                TerminalHelper.runCommand("creditwatcher login claude")
-            }
-            .controlSize(.small)
-            .buttonStyle(.borderedProminent)
-
-            Text("Run import in Terminal, then click Refresh. The app never reads Keychain.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
         }
     }
 
-    private var claudeSignInPrompt: String {
-        if ClaudeAuth.fileCredentialsExist {
-            return "Claude credentials found but usage could not be loaded. Re-import or run `claude` in Terminal, then click Refresh."
+    private var defaultLoginHint: String? {
+        switch provider.id {
+        case "codex":
+            return "Sign in with Codex, then click Refresh."
+        case "claude":
+            if ClaudeAuth.fileCredentialsExist {
+                return "Claude credentials found but usage could not be loaded. Re-import, then click Refresh."
+            }
+            return "Import Claude credentials. If needed, run `claude` first to sign in with Claude Code."
+        case "cursor":
+            return "Sign in to Cursor or import a session token, then click Refresh."
+        default:
+            return nil
         }
-        return "Import Claude credentials via Terminal. If needed, run `claude` first to sign in with Claude Code."
     }
 
     @ViewBuilder

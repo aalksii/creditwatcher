@@ -29,7 +29,7 @@ final class MenuBarController: NSObject {
         let image = NSImage(systemSymbolName: "gauge", accessibilityDescription: "CreditWatcher")
         image?.isTemplate = true
         button.image = image
-        button.contentTintColor = .labelColor
+        button.contentTintColor = nil
         button.action = #selector(togglePopover(_:))
         button.target = self
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -57,11 +57,11 @@ final class MenuBarController: NSObject {
         button.contentTintColor = tint
     }
 
-    private func tintColor(forWorstUsed worst: Double?) -> NSColor {
-        guard let worst else { return .labelColor }
+    private func tintColor(forWorstUsed worst: Double?) -> NSColor? {
+        guard let worst else { return nil }
         if worst > 90 { return .systemRed }
         if worst >= 70 { return .systemYellow }
-        return .systemGreen
+        return nil
     }
 
     @objc private func togglePopover(_ sender: Any?) {

@@ -45,6 +45,10 @@ enum CursorAuth {
         return candidates
     }
 
+    static func forgetCopy() {
+        try? FileManager.default.removeItem(at: copyPath)
+    }
+
     private static func loadFromCopy() -> CursorCredentials? {
         guard let data = try? Data(contentsOf: copyPath),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

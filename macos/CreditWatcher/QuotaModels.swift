@@ -57,6 +57,27 @@ enum ProviderID: String, CaseIterable {
     case codex
     case claude
     case cursor
+
+    var displayName: String {
+        switch self {
+        case .codex: return "Codex"
+        case .claude: return "Claude"
+        case .cursor: return "Cursor"
+        }
+    }
+
+    var loginCommand: String {
+        "creditwatcher login \(rawValue)"
+    }
+}
+
+struct ProviderDisplaySetting: Codable, Identifiable, Equatable {
+    let id: String
+    var isVisible: Bool
+
+    var displayName: String {
+        ProviderID(rawValue: id)?.displayName ?? id.capitalized
+    }
 }
 
 struct ProviderQuotaData: Codable {

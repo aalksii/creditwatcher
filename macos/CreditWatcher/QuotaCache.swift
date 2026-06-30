@@ -63,6 +63,16 @@ enum QuotaCache {
         }
     }
 
+    static func clearProvider(_ provider: ProviderID) {
+        let files = [
+            usageCacheFile(provider),
+            "quota-cache-\(provider.rawValue).json",
+        ]
+        for file in files {
+            try? FileManager.default.removeItem(at: dir.appendingPathComponent(file))
+        }
+    }
+
     private static func usageCacheFile(_ provider: ProviderID) -> String {
         switch provider {
         case .codex: return "usage-cache.json"
