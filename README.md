@@ -7,6 +7,14 @@ A **macOS menu bar app** and **CLI** to monitor **Codex**, **Claude Code**, and 
 
 Inspired by the design spirit of [Stats](https://github.com/exelban/stats) (lightweight macOS menu bar utility).
 
+<p align="center">
+  <a href="https://github.com/aalksii/creditwatcher/releases/download/v0.1.0/CreditWatcher-0.1.0.dmg"><strong>Download CreditWatcher for macOS</strong></a>
+</p>
+
+<p align="center">
+  Prebuilt installers are published through <a href="https://github.com/aalksii/creditwatcher/releases">GitHub Releases</a>.
+</p>
+
 ## Screenshots
 
 <p align="center">
@@ -47,12 +55,6 @@ CreditWatcher is designed to be local-first:
 - **Provider logins:** sign in with official tools first (`codex login`, `claude`, Cursor.app)
 
 ## Install
-
-### Download macOS installer
-
-[Download CreditWatcher-0.1.0.dmg](https://github.com/aalksii/creditwatcher/releases/download/v0.1.0/CreditWatcher-0.1.0.dmg)
-
-Prebuilt installers are published through [GitHub Releases](https://github.com/aalksii/creditwatcher/releases). Download the `.dmg`, open it, and drag **CreditWatcher** to **Applications**.
 
 ### Clone and build CLI
 
