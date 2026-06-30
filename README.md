@@ -9,10 +9,9 @@ Inspired by the design spirit of [Stats](https://github.com/exelban/stats) (ligh
 
 ## Screenshots
 
-> **TODO:** Add screenshots before publishing — menu bar icon + popover, CLI dashboard.
-
-<!-- Placeholder: docs/screenshots/menubar-popover.png -->
-<!-- Placeholder: docs/screenshots/cli-dashboard.png -->
+<p align="center">
+  <img src="media/screenshot.png" alt="CreditWatcher menu bar popover" width="420">
+</p>
 
 ## Features
 
