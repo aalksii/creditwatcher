@@ -67,12 +67,34 @@ final class MenuBarController: NSObject {
     @objc private func togglePopover(_ sender: Any?) {
         guard let button = statusItem?.button else { return }
 
+        if NSApp.currentEvent?.type == .rightMouseUp {
+            showContextMenu(relativeTo: button)
+            return
+        }
+
         if let popover, popover.isShown {
             closePopover()
             return
         }
 
         showPopover(relativeTo: button)
+    }
+
+    private func showContextMenu(relativeTo button: NSStatusBarButton) {
+        closePopover()
+
+        let menu = NSMenu()
+        let quitItem = NSMenuItem(
+            title: "Quit CreditWatcher",
+            action: #selector(quitApp(_:)),
+            keyEquivalent: "q"
+        )
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        statusItem?.menu = menu
+        button.performClick(nil)
+        statusItem?.menu = nil
     }
 
     private func showPopover(relativeTo button: NSStatusBarButton) {
@@ -94,5 +116,10 @@ final class MenuBarController: NSObject {
     private func closePopover() {
         popover?.performClose(nil)
         popover = nil
+    }
+
+    @objc private func quitApp(_ sender: Any?) {
+        closePopover()
+        NSApp.terminate(nil)
     }
 }

@@ -30,6 +30,7 @@
   },
   "scripts": {
     "build": "tsc && cp -r src/dashboard dist/dashboard",
+    "macos:dmg": "scripts/build-dmg.sh",
     "dev": "tsx src/cli.ts",
     "login": "tsx src/cli.ts login",
     "login:codex": "tsx src/cli.ts login codex",

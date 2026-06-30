@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct PopoverView: View {
     @ObservedObject var viewModel: QuotaViewModel
@@ -110,6 +111,11 @@ struct PopoverView: View {
 
             Button("CLI") {
                 TerminalHelper.runCommand("creditwatcher dashboard --verbose")
+            }
+            .controlSize(.small)
+
+            Button("Quit") {
+                NSApp.terminate(nil)
             }
             .controlSize(.small)
         }

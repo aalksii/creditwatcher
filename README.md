@@ -82,6 +82,26 @@ xcodebuild -project macos/CreditWatcher.xcodeproj -scheme CreditWatcher -configu
 
 The built app is under Xcode DerivedData or `build/` when using `xcodebuild`.
 
+### Create a macOS DMG
+
+For a local drag-to-Applications installer:
+
+```bash
+npm run macos:dmg
+```
+
+The DMG is written to `dist/macos/CreditWatcher-<version>.dmg`.
+
+For public distribution, sign and notarize it with an Apple Developer ID:
+
+```bash
+SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+NOTARY_PROFILE="notarytool-profile" \
+npm run macos:dmg
+```
+
+Create the `notarytool` profile once with `xcrun notarytool store-credentials`.
+
 ## Usage
 
 ### CLI
