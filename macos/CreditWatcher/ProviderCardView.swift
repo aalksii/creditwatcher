@@ -111,23 +111,23 @@ struct ProviderCardView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Button("Sign in with Claude") {
-                TerminalHelper.runCommand("claude")
+            Button("Import Claude credentials") {
+                TerminalHelper.runCommand("creditwatcher login claude")
             }
             .controlSize(.small)
             .buttonStyle(.borderedProminent)
 
-            Text("Finish sign-in in Terminal, then click Refresh.")
+            Text("Run import in Terminal, then click Refresh. The app never reads Keychain.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
     }
 
     private var claudeSignInPrompt: String {
-        if ClaudeAuth.officialCredentialsExist {
-            return "Sign in again with Claude Code to refresh your session."
+        if ClaudeAuth.fileCredentialsExist {
+            return "Claude credentials found but usage could not be loaded. Re-import or run `claude` in Terminal, then click Refresh."
         }
-        return "Sign in with Claude Code to view usage limits."
+        return "Import Claude credentials via Terminal. If needed, run `claude` first to sign in with Claude Code."
     }
 
     @ViewBuilder

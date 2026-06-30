@@ -1,6 +1,4 @@
 import Foundation
-import Security
-import CryptoKit
 
 struct ClaudeCredentials {
     let accessToken: String
@@ -10,45 +8,6 @@ struct ClaudeCredentials {
     let scopes: [String]?
     let sourcePath: String
     let managedByClaudeCode: Bool
-}
-
-enum ClaudeKeychain {
-    static func serviceNames() -> [String] {
-        let configDir = (ProcessInfo.processInfo.environment["CLAUDE_CONFIG_DIR"]
-            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude").path)
-            as NSString
-        let expanded = configDir.expandingTildeInPath
-        let fullHash = SHA256.hash(data: Data(expanded.utf8))
-            .map { String(format: "%02x", $0) }
-            .joined()
-            .prefix(16)
-        return [
-            "Claude Code-credentials-\(fullHash)",
-            "Claude Code-credentials",
-        ]
-    }
-
-    static func read() -> (raw: String, service: String)? {
-        let username = NSUserName()
-        for service in serviceNames() {
-            let query: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: service,
-                kSecAttrAccount as String: username,
-                kSecReturnData as String: true,
-                kSecMatchLimit as String: kSecMatchLimitOne,
-            ]
-            var item: CFTypeRef?
-            let status = SecItemCopyMatching(query as CFDictionary, &item)
-            guard status == errSecSuccess,
-                  let data = item as? Data,
-                  let raw = String(data: data, encoding: .utf8),
-                  !raw.isEmpty
-            else { continue }
-            return (raw, service)
-        }
-        return nil
-    }
 }
 
 enum ClaudeAuth {
@@ -64,9 +23,15 @@ enum ClaudeAuth {
             .appendingPathComponent(".creditwatcher/claude-auth.json")
     }
 
-    /// True when Claude Code's own credentials file exists (Keychain is not used in that case).
-    static var officialCredentialsExist: Bool {
-        FileManager.default.fileExists(atPath: claudeCredsPath.path)
+    /// True when any file-based Claude credential source exists.
+    static var fileCredentialsExist: Bool {
+        if let env = ProcessInfo.processInfo.environment["CLAUDE_CODE_OAUTH_TOKEN"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !env.isEmpty {
+            return true
+        }
+        if FileManager.default.fileExists(atPath: claudeCredsPath.path) { return true }
+        if FileManager.default.fileExists(atPath: copyPath.path) { return true }
+        return false
     }
 
     static func loadCandidates() -> [ClaudeCredentials] {
@@ -79,9 +44,6 @@ enum ClaudeAuth {
         }
 
         if let c = loadFile(claudeCredsPath, managed: true) {
-            candidates.append(c)
-        } else if let keychain = ClaudeKeychain.read(),
-                  let c = parse(json: keychain.raw, path: "macOS Keychain (\(keychain.service))", managed: true) {
             candidates.append(c)
         }
 
@@ -203,7 +165,7 @@ enum ClaudeProvider {
             return ProviderQuotaData(
                 providerId: "claude",
                 status: "not_connected",
-                loginHint: "Run `claude` to sign in, or `creditwatcher login claude`"
+                loginHint: "Run `creditwatcher login claude` in Terminal, then click Refresh"
             )
         }
 

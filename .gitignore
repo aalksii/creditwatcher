@@ -5,8 +5,14 @@ dist/
 .env.*
 auth.json
 claude-auth.json
+cursor-auth.json
 *.credentials.json
 .creditwatcher/
 .auth.json.*
-xcuserdata
+
+# macOS / Xcode
+.DS_Store
+DerivedData/
+build/
 *.xcuserstate
+**/xcuserdata/

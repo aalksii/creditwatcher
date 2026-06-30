@@ -1,85 +1,73 @@
-# creditwatcher
+# CreditWatcher
 
-A minimal CLI to check **Codex**, **Claude Code**, and **Cursor** subscription usage limits safely.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
+
+A **macOS menu bar app** and **CLI** to monitor **Codex**, **Claude Code**, and **Cursor** subscription usage limits — locally, read-only, with no telemetry.
+
+Inspired by the design spirit of [Stats](https://github.com/exelban/stats) (lightweight macOS menu bar utility).
+
+## Screenshots
+
+> **TODO:** Add screenshots before publishing — menu bar icon + popover, CLI dashboard.
+
+<!-- Placeholder: docs/screenshots/menubar-popover.png -->
+<!-- Placeholder: docs/screenshots/cli-dashboard.png -->
+
+## Features
+
+- **Three providers** — Codex (OpenAI), Claude Code (Anthropic), Cursor in one place
+- **macOS menu bar app** — native Swift, no Node.js required at runtime
+- **CLI dashboard** — rich terminal view with color-coded progress bars
+- **Read-only usage checks** — never proxies inference or scrapes web UIs
+- **Local credentials** — reads existing logins from official tools; tokens stay on your machine
+- **Shared cache** — CLI and menu bar app share `~/.creditwatcher/` quota cache
+- **60-second cooldown** — on-demand refresh, avoids hammering provider APIs
+- **Optional local web UI** — `creditwatcher serve` on `127.0.0.1` only
+
+## Privacy & security
+
+CreditWatcher is designed to be local-first:
+
+| Data | Where it lives |
+|------|----------------|
+| OAuth / session tokens | Read from local files only (menu bar app never reads Keychain) |
+| Usage responses | Cached under `~/.creditwatcher/` |
+| Network calls | Direct to official provider APIs only |
+
+- **No telemetry** — no analytics, crash reporters, or third-party servers
+- **No token logging** — access/refresh tokens are not printed in normal operation
+- **No Keychain in the menu bar app** — Claude auth uses JSON files and env vars only; no macOS Keychain prompts from the app
+- **Optional CLI import** — `creditwatcher login claude` may read Keychain once in Terminal to copy credentials into `~/.creditwatcher/claude-auth.json`
+- **Sandbox-free macOS app** — required to read local credential stores and call provider APIs; see [SECURITY.md](SECURITY.md)
+
+## Prerequisites
+
+- **CLI:** Node.js 18+
+- **macOS app:** macOS 14+ (Sonoma), Xcode 15+
+- **Provider logins:** sign in with official tools first (`codex login`, `claude`, Cursor.app)
 
 ## Install
 
-**Global CLI** (so `creditwatcher` is on your PATH):
+### Clone and build CLI
 
 ```bash
+git clone https://github.com/aalksii/creditwatcher.git
+cd creditwatcher
 npm install
 npm run build
-npm link
+npm link   # optional — install `creditwatcher` on your PATH
 ```
 
-Then run e.g. `creditwatcher status codex`.
-
-**Without linking** (from a clone):
+Without linking:
 
 ```bash
-npm install
 npm run dashboard       # rich terminal dashboard (all providers)
 npm run status          # detailed text output per provider
-npm run status:codex    # Codex only
-npm run status:claude   # Claude only
-npm run status:cursor   # Cursor only
-npm run login           # show login help
-npm run login:codex     # Codex OAuth → ~/.creditwatcher/auth.json
-npm run login:claude    # import Claude Code credentials
-npm run login:cursor    # import Cursor session from Cursor.app
-npm run serve           # optional web UI at http://127.0.0.1:9477
+npm run quota           # JSON output (used by menu bar integration)
 ```
 
-**One-off** (if published or with `bin` set locally after build):
-
-```bash
-npm install && npm run build
-npx creditwatcher status codex
-```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `creditwatcher login codex` | OAuth PKCE login via auth.openai.com |
-| `creditwatcher login claude` | Import credentials from `~/.claude/.credentials.json` |
-| `creditwatcher login cursor` | Import Cursor session from Cursor.app (`state.vscdb`) or paste token |
-| `creditwatcher status codex` | Show Codex usage limits |
-| `creditwatcher status claude` | Show Claude 5h / 7d utilization |
-| `creditwatcher status cursor` | Show Cursor plan usage (included / on-demand) |
-| `creditwatcher dashboard` | Rich terminal dashboard — Codex, Claude, and Cursor |
-| `creditwatcher dashboard --force` | Skip the 60-second usage cooldown |
-| `creditwatcher quota --json` | Machine-readable quota JSON (menu bar app) |
-| `creditwatcher quota --force` | Skip cooldown for JSON output |
-| `creditwatcher status` | Show all providers with credentials configured |
-| `creditwatcher status --force` | Skip the 60-second usage cooldown |
-| `creditwatcher serve` | Optional local web UI at http://127.0.0.1:9477 |
-| `creditwatcher serve --port 3000` | Web UI on a custom port |
-
-
-## Dashboard
-
-The primary way to view usage is the **CLI dashboard** — a compact terminal view with color-coded progress bars:
-
-```bash
-npm run dashboard
-# or: creditwatcher dashboard
-# or: creditwatcher dashboard --force   # bypass 60s cooldown
-```
-
-Shows Codex, Claude, and Cursor: plan name, auth source, usage windows, reset countdown, and billing cycle (Cursor). Color coding: green below 70%, yellow 70–90%, red above 90%.
-
-## macOS menu bar app
-
-Native Swift menu bar app (Stats-inspired). **No Node.js required** — the app reads credentials locally and calls provider usage APIs directly via `URLSession`.
-
-### Prerequisites
-
-- macOS 14+ (Sonoma)
-- Xcode 15+
-- Existing logins: `codex login`, `claude`, and/or Cursor.app signed in
-
-### Build
+### Build macOS menu bar app
 
 ```bash
 open macos/CreditWatcher.xcodeproj
@@ -89,283 +77,175 @@ open macos/CreditWatcher.xcodeproj
 Or from the command line:
 
 ```bash
-cd macos
-xcodebuild -project CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Debug build
+xcodebuild -project macos/CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Debug build
 ```
 
-The built app is at `~/Library/Developer/Xcode/DerivedData/.../Build/Products/Debug/CreditWatcher.app` when building from Xcode.
+The built app is under Xcode DerivedData or `build/` when using `xcodebuild`.
 
-### Run
+## Usage
+
+### CLI
+
+| Command | Description |
+|---------|-------------|
+| `creditwatcher dashboard` | Rich terminal dashboard — all providers |
+| `creditwatcher dashboard --force` | Skip the 60-second usage cooldown |
+| `creditwatcher status [codex\|claude\|cursor]` | Detailed usage per provider |
+| `creditwatcher quota --json` | Machine-readable quota JSON |
+| `creditwatcher login [codex\|claude\|cursor]` | Import or OAuth login helpers |
+| `creditwatcher serve` | Optional local web UI at http://127.0.0.1:9477 |
+
+Example:
+
+```bash
+creditwatcher dashboard
+creditwatcher status claude
+creditwatcher quota --json
+```
+
+### macOS menu bar app
 
 1. Launch **CreditWatcher** from Xcode (⌘R) or open the built `.app`
-2. A gauge icon appears in the menu bar (no Dock icon — `LSUIElement`)
-3. Click the icon to open a popover with Codex, Claude, and Cursor usage cards
+2. A gauge icon appears in the menu bar (no Dock icon)
+3. Click the icon for a popover with Codex, Claude, and Cursor usage cards
 4. Icon tint reflects worst-case usage: green &lt;70%, yellow 70–90%, red &gt;90%
 
 **Refresh:** auto-refresh on open; **Refresh** button bypasses the 60s cooldown. Background refresh every 60 seconds.
 
-**CLI button:** opens Terminal with `creditwatcher dashboard --verbose` (optional — uses the separate Node CLI).
+**Launch at login:** System Settings → General → Login Items → add CreditWatcher.
 
-### Native architecture
+**CLI button:** opens Terminal with `creditwatcher dashboard --verbose` (optional — requires the Node CLI).
 
-```
-CreditWatcher.app (Swift)
-├── CodexProvider    → ~/.codex/auth.json + GET /wham/usage
-├── ClaudeProvider   → ~/.claude / Keychain + GET /api/oauth/usage
-└── CursorProvider   → Cursor state.vscdb + GET cursor.com/api/usage-summary
-```
+## Provider setup
 
-Shares disk cache with the CLI at `~/.creditwatcher/quota-cache-*.json`.
+Sign in with the official tools first. CreditWatcher reads existing credentials — it does not replace them.
 
-### Troubleshooting
+### Codex (OpenAI)
 
-**No gauge icon in the menu bar**
-
-1. **Check Console.app** — filter for `CreditWatcher`. You should see:
-   - `App started`
-   - `Native quota service ready`
-   - `Menu bar item created`
-2. **Quit duplicate instances** — `pkill CreditWatcher` then relaunch.
-3. **Menu bar overflow** — hold ⌘ and drag other icons aside.
-
-**Popover shows "not connected"**
-
-Sign in with the official tools first (`codex login`, `claude`, Cursor.app).
-
-**Popover shows authentication error**
-
-Re-login with the official CLI for that provider. Claude tokens refresh automatically when possible.
-
-### Launch at login
-
-**System Settings:** General → Login Items → add CreditWatcher.
-
-### JSON API
-
-```bash
-creditwatcher quota --json
-# or: npm run quota
-```
-
-Returns provider cards without auth paths (safe for the menu bar UI).
-
-### Optional web UI
-
-For a browser-based view (future/experimental):
-
-```bash
-npm run serve
-# or: creditwatcher serve --port 3000
-```
-
-Open **http://127.0.0.1:9477**. Binds to `127.0.0.1` only — no external access, no tokens in API responses.
-
-## Claude Code setup
-
-**Recommended (safest):** sign in with the official Claude Code CLI:
-
-```bash
-claude
-creditwatcher status claude
-```
-
-creditwatcher reads Claude OAuth tokens from (in order, freshest token wins on auth failure):
-
-1. `CLAUDE_CODE_OAUTH_TOKEN` environment variable
-2. `~/.claude/.credentials.json` (if present — Keychain is skipped when this file exists)
-3. macOS Keychain (`Claude Code-credentials`) — Claude Code's default store when no credentials file
-4. `~/.creditwatcher/claude-auth.json` (import copy)
-
-**Optional import copy:**
-
-```bash
-creditwatcher login claude
-```
-
-This copies tokens into `~/.creditwatcher/claude-auth.json` (mode 0600) without modifying Claude Code's own credential store.
-
-### Claude safety notes
-
-- **Read-only** `GET https://api.anthropic.com/api/oauth/usage` only
-- Direct calls to `api.anthropic.com` only — no third-party relay
-- Refreshes expired tokens via `POST https://platform.claude.com/v1/oauth/token` and saves rotated tokens to `~/.creditwatcher/claude-auth.json` only (never writes `~/.claude/.credentials.json`)
-- On-demand checks with a **60-second cooldown** (separate from Codex)
-- Required headers: `Authorization`, `anthropic-beta: oauth-2025-04-20`, `User-Agent: claude-code/...`
-- **OAuth scope:** `/api/oauth/usage` requires `user:profile` in the token scopes. Tokens with only `user:inference` return 401/403.
-- Anthropic restricts consumer OAuth in third-party tools — **use at your own risk**
-
-## Cursor setup
-
-**Recommended:** sign in with the official Cursor app — creditwatcher reads the session automatically:
-
-```bash
-# Sign in via Cursor.app, then:
-creditwatcher status cursor
-```
-
-Auth sources (in order):
-
-1. `CURSOR_SESSION_TOKEN` environment variable (`WorkosCursorSessionToken` value, or JWT from `cursorAuth/accessToken`)
-2. Cursor IDE SQLite state DB — `state.vscdb` key `cursorAuth/accessToken` (macOS/Linux/Windows)
-3. `~/.creditwatcher/cursor-auth.json` (import copy)
-
-**Optional import copy:**
-
-```bash
-creditwatcher login cursor
-```
-
-Reads from Cursor.app if installed; otherwise prompts to paste a session token from browser DevTools (Application → Cookies → `WorkosCursorSessionToken` on cursor.com).
-
-### Cursor safety notes
-
-- **Read-only** `GET https://cursor.com/api/usage-summary` and `GET https://cursor.com/api/auth/me` only
-- **Unofficial API** — reverse-engineered from the Cursor dashboard; may change without notice
-- Session tokens stay **local only** — never logged or sent to third parties
-- On-demand checks with a **60-second cooldown** (separate from Codex/Claude)
-- No official Cursor API exists — **use at your own risk**
-
-## Setup
-
-**Recommended (safest):** use the official Codex CLI login:
+**Recommended:**
 
 ```bash
 codex login
-creditwatcher status
+creditwatcher status codex
 ```
 
-creditwatcher reads `~/.codex/auth.json` first (official CLI auth), then falls back to `~/.creditwatcher/auth.json`.
+Auth order:
 
-**Alternative:** login directly via creditwatcher:
+1. `~/.codex/auth.json` (official Codex CLI)
+2. `~/.creditwatcher/auth.json` (via `creditwatcher login codex`)
+
+### Claude Code (Anthropic)
+
+**Recommended (menu bar app):**
 
 ```bash
-npm run login
-# or: npx tsx src/cli.ts login codex
+claude                              # sign in with Claude Code if needed
+creditwatcher login claude          # import into ~/.creditwatcher/claude-auth.json
 ```
 
-Tokens are stored in `~/.creditwatcher/auth.json` (mode 0600).
+Then click **Refresh** in the menu bar app.
 
-## What it does
+Auth order for automatic usage checks (freshest token wins on auth failure):
 
-- **Read-only** `GET https://chatgpt.com/backend-api/wham/usage`
-- Refreshes OAuth tokens via `https://auth.openai.com/oauth/token` when expired
-- Displays plan type, 5-hour window, weekly window, and credits balance
-- Stores tokens **locally only** — never sent to third-party servers
+1. `CLAUDE_CODE_OAUTH_TOKEN` environment variable
+2. `~/.claude/.credentials.json`
+3. `~/.creditwatcher/claude-auth.json` (import copy via `creditwatcher login claude`)
 
-## What it does NOT do
+The menu bar app reads only the sources above. For Claude Code installs that store credentials in Keychain (no credentials file), run `creditwatcher login claude` in Terminal — the CLI may read Keychain once there and save a file copy the app can use.
 
-- Proxy inference requests (no `/codex` or `/responses` calls)
-- Scrape the ChatGPT web UI
-- Send tokens to any server except OpenAI (`auth.openai.com`, `chatgpt.com`)
-- Background polling (on-demand only; max once per 60 seconds)
-- Log or print access/refresh tokens
+### Cursor
 
-## Safety & Terms of Service
+**Recommended:** sign in via Cursor.app, then:
 
-### Why this exists
+```bash
+creditwatcher status cursor
+```
 
-Developers want to see Codex quota usage without opening ChatGPT settings. This tool follows patterns used by the official Codex CLI, OpenClaw, CodexBar, and similar **read-only usage checkers**.
+Auth order:
 
-### OpenAI / Codex
+1. `CURSOR_SESSION_TOKEN` environment variable
+2. Cursor IDE SQLite state DB — `state.vscdb` key `cursorAuth/accessToken`
+3. `~/.creditwatcher/cursor-auth.json` (import copy via `creditwatcher login cursor`)
 
-OpenAI has been **more permissive** than Anthropic about third-party tools using Codex OAuth tokens for external clients (as of early 2026). The official Codex CLI uses a **public OAuth client_id** (`app_EMoamEEZ73f0CkXaXp7hrann`) and the same PKCE flow implemented here.
+## Architecture
 
-Still, **use at your own risk**. This is an unofficial tool not endorsed by OpenAI.
+```
+CreditWatcher.app (Swift)          creditwatcher CLI (Node.js)
+├── CodexProvider                  ├── src/codex/
+├── ClaudeProvider                 ├── src/claude/
+└── CursorProvider                 └── src/cursor/
+         │                                    │
+         └──────── shared cache ──────────────┘
+                  ~/.creditwatcher/
+```
 
-### What gets accounts banned (Jan 2026 context)
-
-Reports from Anthropic's OAuth crackdown (OpenCode, etc.) highlight patterns that trigger enforcement:
-
-| Risky pattern | Why it's banned |
-|---------------|-----------------|
-| **Spoofing official client harness** | Pretending to be Claude Code to route subscription quota through third-party agents |
-| **Credential exfiltration** | Sending OAuth tokens to third-party servers |
-| **Inference proxying** | Using subscription tokens to serve API requests for other users/tools |
-| **Aggressive polling** | Hammering usage/auth endpoints (abuse filter triggers) |
-| **Token sharing** | Distributing refresh tokens across machines/users |
-
-Anthropic explicitly prohibits consumer OAuth in third-party tools. OpenAI's stance on Codex third-party usage is more open, but abusive patterns can still trigger account action.
-
-### Safe patterns this tool follows
-
-| Pattern | Implementation |
-|---------|----------------|
-| Read-only usage endpoint | `GET /wham/usage` only |
-| Official OAuth PKCE flow | Same client_id, scopes, redirect as Codex CLI |
-| Local token storage | `~/.creditwatcher/auth.json` or `~/.codex/auth.json` |
-| Direct OpenAI calls only | No third-party relay |
-| On-demand checks | 60-second cooldown between usage requests |
-| No token logging | Tokens never printed to stdout/stderr |
-| Prefer existing Codex CLI auth | Reads `~/.codex/auth.json` first |
-
-### What to avoid
-
-- Do not use this (or any tool) to **proxy Codex inference** for other apps
-- Do not **poll usage every few seconds** — once per minute max, on-demand preferred
-- Do not **upload auth.json** anywhere
-- Do not run multiple instances doing concurrent OAuth on port 1455
-
-## OAuth details
-
-Matches the official Codex CLI (verified from openresponses/codex and opencode sources):
-
-- **Client ID:** `app_EMoamEEZ73f0CkXaXp7hrann` (public, shipped with Codex CLI)
-- **Authorize:** `https://auth.openai.com/oauth/authorize`
-- **Token:** `https://auth.openai.com/oauth/token`
-- **Redirect:** `http://localhost:1455/auth/callback`
-- **Scopes:** `openid profile email offline_access api.connectors.read api.connectors.invoke`
-- **Extra params:** `id_token_add_organizations=true`, `codex_cli_simplified_flow=true`
+Native app calls provider APIs directly via `URLSession`. No Node.js required at runtime.
 
 ## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CODEX_HOME` | `~/.codex` | Where to find Codex CLI auth.json |
-| `CLAUDE_CONFIG_DIR` | `~/.claude` | Where to find Claude `.credentials.json` |
-| `CURSOR_SESSION_TOKEN` | — | Cursor `WorkosCursorSessionToken` cookie value |
+| `CODEX_HOME` | `~/.codex` | Codex CLI auth directory |
+| `CLAUDE_CONFIG_DIR` | `~/.claude` | Claude credentials directory |
+| `CURSOR_SESSION_TOKEN` | — | Cursor session cookie value |
 | `CURSOR_STATE_DB` | platform default | Override path to Cursor `state.vscdb` |
-| `CREDITWATCHER_OAUTH_PORT` | `1455` | OAuth callback port |
+| `CREDITWATCHER_OAUTH_PORT` | `1455` | OAuth callback port (Codex login) |
 
-## Example output
+## Disclaimer
 
-### Dashboard
+**CreditWatcher is unofficial and not endorsed by OpenAI, Anthropic, or Cursor.**
 
-```
-┌─ CreditWatcher ──────────────────────────────────────────────────┐
-│ Codex (plus)                     │ Claude (max)                  │
-│ Auth: ~/.codex/auth.json         │ Auth: ~/.claude/.credentials… │
-│ 5h  ████░░░░░░ 33% ↻2h 15m       │ 5h  ████░░░░░░ 42% ↻1h 12m   │
-│ wk  ██░░░░░░░░ 12% ↻5d 3h        │ 7d  █░░░░░░░░░  8% ↻4d 6h   │
-│ Credits: $42.00                  │                               │
-└──────────────────────────────────────────────────────────────────┘
-Updated 3:42:15 PM
-```
+- Usage APIs may change without notice (especially Cursor's unofficial endpoints)
+- Third-party tools using consumer OAuth may violate provider Terms of Service
+- Anthropic has restricted consumer OAuth in third-party tools — **use Claude integration at your own risk**
+- This tool performs **read-only** usage checks — do not use it to proxy inference or share tokens
+- **Use at your own risk** — the authors are not responsible for account actions by providers
 
-### Status (detailed)
-⚠️  Safety notice: creditwatcher only reads your usage limits via GET /wham/usage.
-   Tokens stay on your machine. No inference proxying. Use at your own risk.
-   Prefer logging in with the official `codex login` and reading ~/.codex/auth.json.
+See the [Safety & Terms of Service](#safety--terms-of-service) section in this README for details on safe usage patterns.
 
-Codex usage — plus
-Auth: /Users/you/.codex/auth.json
+## Roadmap
 
-5-hour   ████░░░░░░░░ 33.0% used (67.0% left) · resets in 2h 15m
-weekly   ██░░░░░░░░░░ 12.0% used (88.0% left) · resets in 5d 3h
-```
+- [ ] Pre-built macOS release (signed `.app` / Homebrew cask)
+- [ ] Screenshots and demo GIF for README
+- [ ] npm publish for global CLI install
 
+## Safety & Terms of Service
 
+### What this tool does
 
-### Claude example output
+- **Read-only** usage endpoints only (`GET /wham/usage`, `/api/oauth/usage`, `/api/usage-summary`)
+- Refreshes expired OAuth tokens via official token endpoints when needed
+- Stores tokens **locally only**
+- On-demand checks with a **60-second cooldown** per provider
+- Direct calls to provider APIs — no third-party relay
 
-```
-Claude usage — max
-Auth: /Users/you/.claude/.credentials.json
+### What this tool does NOT do
 
-5-hour         ████░░░░░░░░ 42.0% used (58.0% left) · resets in 1h 12m
-7-day          ██░░░░░░░░░░ 8.0% used (92.0% left) · resets in 4d 6h
-7-day Sonnet   █░░░░░░░░░░░ 5.0% used (95.0% left) · resets in 4d 6h
-```
+- Proxy inference requests
+- Scrape ChatGPT or Claude web UIs
+- Send tokens to any server except the official provider APIs
+- Background polling beyond the 60s refresh interval
+- Log or print access/refresh tokens
+
+### Risky patterns to avoid
+
+| Pattern | Why it's risky |
+|---------|----------------|
+| Spoofing official client harness | Routing subscription quota through third-party agents |
+| Credential exfiltration | Sending OAuth tokens to third-party servers |
+| Inference proxying | Using subscription tokens for other users/tools |
+| Aggressive polling | Hammering usage endpoints |
+| Token sharing | Distributing refresh tokens across machines |
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Please report security issues via [SECURITY.md](SECURITY.md).
 
 ## License
 
-MIT
+[MIT](LICENSE) — Copyright (c) 2026 CreditWatcher contributors
+
+## Credits
+
+- UI inspiration: [Stats](https://github.com/exelban/stats) by [exelban](https://github.com/exelban)
+- Codex OAuth flow aligned with the official Codex CLI patterns

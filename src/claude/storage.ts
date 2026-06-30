@@ -103,9 +103,9 @@ function sortCandidates(candidates: ClaudeCredentials[]): ClaudeCredentials[] {
   });
 }
 
-export async function loadClaudeCredentialCandidates(): Promise<
-  ClaudeCredentials[]
-> {
+export async function loadClaudeCredentialCandidates(options?: {
+  includeKeychain?: boolean;
+}): Promise<ClaudeCredentials[]> {
   const candidates: ClaudeCredentials[] = [];
 
   const envToken = process.env.CLAUDE_CODE_OAUTH_TOKEN?.trim();
@@ -122,7 +122,7 @@ export async function loadClaudeCredentialCandidates(): Promise<
   const fromClaude = await tryLoadFile(claudePath, true);
   if (fromClaude) {
     candidates.push(fromClaude);
-  } else {
+  } else if (options?.includeKeychain) {
     const keychain = await readClaudeKeychainCredentials();
     if (keychain) {
       const fromKeychain = parseCredentialsJson(
@@ -175,7 +175,9 @@ export async function saveClaudeCredentialsCopy(
 }
 
 export async function importClaudeCredentials(): Promise<ClaudeCredentials> {
-  const existing = await loadClaudeCredentials();
+  const existing = (
+    await loadClaudeCredentialCandidates({ includeKeychain: true })
+  )[0];
   if (!existing) {
     throw new Error(
       "No Claude Code credentials found. Run `claude` and sign in first, then retry.",

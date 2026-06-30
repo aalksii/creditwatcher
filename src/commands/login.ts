@@ -5,7 +5,7 @@ import { CLAUDE_DISCLAIMER } from "../claude/constants.js";
 import { fetchClaudeUsage } from "../claude/usage.js";
 import {
   importClaudeCredentials,
-  loadClaudeCredentials,
+  loadClaudeCredentialCandidates,
 } from "../claude/storage.js";
 import { CURSOR_DISCLAIMER } from "../cursor/constants.js";
 import { fetchCursorUsage } from "../cursor/usage.js";
@@ -35,11 +35,13 @@ export async function loginClaude(): Promise<void> {
   console.log(CLAUDE_DISCLAIMER);
   console.log("");
   console.log(
-    "Importing credentials from ~/.claude/.credentials.json or macOS Keychain...",
+    "Importing credentials from ~/.claude/.credentials.json, macOS Keychain (one-time), or existing import copy...",
   );
   console.log("");
 
-  const existing = await loadClaudeCredentials();
+  const existing = (
+    await loadClaudeCredentialCandidates({ includeKeychain: true })
+  )[0];
   if (!existing) {
     throw new Error(
       "No Claude Code credentials found. Run `claude` and sign in first, then retry.",

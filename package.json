@@ -1,7 +1,29 @@
 {
   "name": "creditwatcher",
   "version": "0.1.0",
-  "description": "CLI to check Codex, Claude, and Cursor usage limits safely",
+  "description": "macOS menu bar app and CLI to monitor Codex, Claude Code, and Cursor usage limits",
+  "license": "MIT",
+  "author": "CreditWatcher contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aalksii/creditwatcher.git"
+  },
+  "homepage": "https://github.com/aalksii/creditwatcher#readme",
+  "bugs": {
+    "url": "https://github.com/aalksii/creditwatcher/issues"
+  },
+  "keywords": [
+    "codex",
+    "claude",
+    "cursor",
+    "usage",
+    "quota",
+    "macos",
+    "menu-bar",
+    "cli",
+    "openai",
+    "anthropic"
+  ],
   "type": "module",
   "bin": {
     "creditwatcher": "./dist/cli.js"
