@@ -4,6 +4,7 @@ import AppKit
 struct PopoverView: View {
     @ObservedObject var viewModel: QuotaViewModel
     @State private var showsSettings = false
+    private let projectURL = URL(string: "https://github.com/aalksii/creditwatcher")!
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -33,6 +34,15 @@ struct PopoverView: View {
                 ProgressView()
                     .controlSize(.small)
             }
+            Button {
+                NSWorkspace.shared.open(projectURL)
+            } label: {
+                Image(systemName: "link")
+            }
+            .buttonStyle(.plain)
+            .controlSize(.small)
+            .help("Open GitHub project")
+
             Button {
                 showsSettings.toggle()
             } label: {
