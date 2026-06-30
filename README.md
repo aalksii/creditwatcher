@@ -263,7 +263,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Please report security issues via [SECUR
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2026 CreditWatcher contributors
+[MIT](LICENSE) — Copyright (c) 2026 Aleksei Artemiev
 
 ## Credits
 

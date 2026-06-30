@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "macOS menu bar app and CLI to monitor Codex, Claude Code, and Cursor usage limits",
   "license": "MIT",
-  "author": "CreditWatcher contributors",
+  "author": "Aleksei Artemiev",
   "repository": {
     "type": "git",
     "url": "https://github.com/aalksii/creditwatcher.git"
