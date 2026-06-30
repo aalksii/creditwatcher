@@ -48,6 +48,12 @@ CreditWatcher is designed to be local-first:
 
 ## Install
 
+### Download macOS installer
+
+[Download CreditWatcher-0.1.0.dmg](https://github.com/aalksii/creditwatcher/releases/download/v0.1.0/CreditWatcher-0.1.0.dmg)
+
+Prebuilt installers are published through [GitHub Releases](https://github.com/aalksii/creditwatcher/releases). Download the `.dmg`, open it, and drag **CreditWatcher** to **Applications**.
+
 ### Clone and build CLI
 
 ```bash
@@ -127,9 +133,12 @@ creditwatcher quota --json
 1. Launch **CreditWatcher** from Xcode (⌘R) or open the built `.app`
 2. A gauge icon appears in the menu bar (no Dock icon)
 3. Click the icon for a popover with Codex, Claude, and Cursor usage cards
-4. Icon tint reflects worst-case usage: green &lt;70%, yellow 70–90%, red &gt;90%
+4. Use the gear button to show/hide providers, reorder cards, and sign in or out per tool
+5. Icon tint reflects worst-case usage: system default &lt;70%, yellow 70–90%, red &gt;90%
 
 **Refresh:** auto-refresh on open; **Refresh** button bypasses the 60s cooldown. Background refresh every 60 seconds.
+
+**Quit:** click **Quit** in the popover or right-click the menu bar icon and choose **Quit CreditWatcher**.
 
 **Launch at login:** System Settings → General → Login Items → add CreditWatcher.
 
@@ -225,7 +234,7 @@ See the [Safety & Terms of Service](#safety--terms-of-service) section in this R
 ## Roadmap
 
 - [ ] Pre-built macOS release (signed `.app` / Homebrew cask)
-- [ ] Screenshots and demo GIF for README
+- [ ] Demo GIF for README
 - [ ] npm publish for global CLI install
 
 ## Safety & Terms of Service

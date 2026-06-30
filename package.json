@@ -25,11 +25,17 @@
     "anthropic"
   ],
   "type": "module",
+  "files": [
+    "dist/",
+    "media/screenshot.png",
+    "!dist/macos/"
+  ],
   "bin": {
     "creditwatcher": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc && cp -r src/dashboard dist/dashboard",
+    "build": "tsc && rm -rf dist/dashboard && cp -R src/dashboard dist/dashboard",
+    "prepack": "npm run build",
     "macos:dmg": "scripts/build-dmg.sh",
     "dev": "tsx src/cli.ts",
     "login": "tsx src/cli.ts login",

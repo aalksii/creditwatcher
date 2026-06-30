@@ -1,6 +1,8 @@
 node_modules/
 dist/
+*.tgz
 *.log
+npm-debug.log*
 .env
 .env.*
 auth.json
@@ -14,5 +16,6 @@ cursor-auth.json
 .DS_Store
 DerivedData/
 build/
+*.xcresult
 *.xcuserstate
 **/xcuserdata/
