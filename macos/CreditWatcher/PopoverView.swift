@@ -194,7 +194,7 @@ struct PopoverView: View {
             .disabled(viewModel.isLoading)
 
             Button("CLI") {
-                TerminalHelper.runCommand("creditwatcher dashboard --verbose")
+                TerminalHelper.runCommand(CLIInstaller.terminalCommand(arguments: "dashboard --verbose"))
             }
             .controlSize(.small)
 

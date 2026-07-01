@@ -34,9 +34,10 @@
     "creditwatcher": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc && rm -rf dist/dashboard && cp -R src/dashboard dist/dashboard",
+    "build": "mkdir -p dist && find dist -mindepth 1 -maxdepth 1 ! -name macos -exec rm -rf {} + && tsc && cp src/dashboard/index.html dist/dashboard/index.html",
     "prepack": "npm run build",
     "macos:dmg": "scripts/build-dmg.sh",
+    "macos:uninstall": "scripts/uninstall-local.sh",
     "dev": "tsx src/cli.ts",
     "login": "tsx src/cli.ts login",
     "login:codex": "tsx src/cli.ts login codex",

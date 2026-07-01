@@ -88,7 +88,7 @@ struct ProviderCardView: View {
 
                 if shouldShowClaudeSessionRefresh {
                     Button("Refresh Claude Session") {
-                        TerminalHelper.runCommand("claude; creditwatcher login claude")
+                        TerminalHelper.runCommand("claude; \(CLIInstaller.terminalCommand(arguments: "login claude"))")
                     }
                     .controlSize(.small)
                     .help("Open Terminal, run Claude sign-in, then import Claude credentials")

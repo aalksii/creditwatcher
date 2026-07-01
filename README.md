@@ -99,6 +99,18 @@ npm run macos:dmg
 
 The DMG is written to `dist/macos/CreditWatcher-<version>.dmg`.
 
+The DMG bundles the Node CLI inside `CreditWatcher.app`. On launch from outside the installer volume, the app tries to install a `creditwatcher` shim into a writable terminal PATH directory such as `/opt/homebrew/bin`, `/usr/local/bin`, or `~/.local/bin`. It will not overwrite an existing non-CreditWatcher command.
+
+For a clean local reinstall test:
+
+```bash
+npm run macos:uninstall -- --dry-run
+npm run macos:uninstall
+npm run macos:dmg
+```
+
+`macos:uninstall` removes `/Applications/CreditWatcher.app` and CreditWatcher-owned CLI shims only. It keeps `~/.creditwatcher` unless you pass `--cache`.
+
 For public distribution, sign and notarize it with an Apple Developer ID:
 
 ```bash
@@ -144,7 +156,7 @@ creditwatcher quota --json
 
 **Launch at login:** System Settings → General → Login Items → add CreditWatcher.
 
-**CLI button:** opens Terminal with `creditwatcher dashboard --verbose` (optional — requires the Node CLI).
+**CLI button:** opens Terminal with the bundled CLI dashboard. Node.js 18+ is still required.
 
 ## Provider setup
 
@@ -237,7 +249,7 @@ See the [Safety & Terms of Service](#safety--terms-of-service) section in this R
 
 - [ ] Pre-built macOS release (signed `.app` / Homebrew cask)
 - [ ] Demo GIF for README
-- [ ] npm publish for global CLI install
+- [ ] npm publish for optional global CLI install
 
 ## Safety & Terms of Service
 
