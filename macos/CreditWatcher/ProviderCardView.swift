@@ -132,28 +132,7 @@ struct ProviderCardView: View {
     @ViewBuilder
     private var windowRows: some View {
         ForEach(provider.windows) { window in
-            HStack(spacing: 8) {
-                Text(shortWindowLabel(window.label))
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-                    .frame(width: 28, alignment: .leading)
-
-                ProgressView(value: min(max(window.usedPercent, 0), 100), total: 100)
-                    .tint(percentColor(window.usedPercent))
-                    .frame(maxWidth: .infinity)
-
-                Text(formatPercent(window.usedPercent))
-                    .font(.caption.monospaced())
-                    .foregroundStyle(percentColor(window.usedPercent))
-                    .frame(width: 40, alignment: .trailing)
-
-                if let reset = resetAfterSeconds(for: window) {
-                    Text("↻\(formatDuration(seconds: reset))")
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 56, alignment: .trailing)
-                }
-            }
+            QuotaWindowRowView(window: window, resetSeconds: resetAfterSeconds(for: window))
         }
     }
 
@@ -171,5 +150,50 @@ struct ProviderCardView: View {
             }
         }
         return window.resetAfterSeconds
+    }
+}
+
+private struct QuotaWindowRowView: View {
+    let window: QuotaWindow
+    let resetSeconds: Int?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(shortWindowLabel(window.label))
+                .font(.caption.monospaced())
+                .foregroundStyle(.secondary)
+                .frame(width: 28, alignment: .leading)
+
+            ProgressView(value: min(max(window.usedPercent, 0), 100), total: 100)
+                .tint(percentColor(window.usedPercent))
+                .frame(maxWidth: .infinity)
+
+            Text(formatPercent(window.usedPercent))
+                .font(.caption.monospaced())
+                .foregroundStyle(percentColor(window.usedPercent))
+                .frame(width: 40, alignment: .trailing)
+
+            resetCountdown
+        }
+    }
+
+    @ViewBuilder
+    private var resetCountdown: some View {
+        if let resetSeconds {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption2.weight(.semibold))
+                    .frame(width: 10, alignment: .center)
+
+                Text(formatDuration(seconds: resetSeconds))
+                    .font(.caption2.monospaced())
+            }
+            .foregroundStyle(.secondary)
+            .frame(width: 66, alignment: .trailing)
+            .help("Resets in \(formatDuration(seconds: resetSeconds))")
+        } else {
+            Color.clear
+                .frame(width: 66)
+        }
     }
 }
