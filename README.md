@@ -275,6 +275,9 @@ See the [Safety & Terms of Service](#safety--terms-of-service) section in this R
 - [ ] Pre-built macOS release (signed `.app` / Homebrew cask)
 - [ ] Demo GIF for README
 - [ ] npm publish for optional global CLI install
+- [ ] Clearer refresh timing and near-limit warnings in the menu bar UI
+- [ ] Multiple accounts/workspaces per provider
+- [ ] Usage estimator for long-running agent/coding sessions
 
 
 
@@ -328,4 +331,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Please report security issues via [SECUR
 
 - UI inspiration: [Stats](https://github.com/exelban/stats) by [exelban](https://github.com/exelban)
 - Codex OAuth flow aligned with the official Codex CLI patterns
-
