@@ -81,10 +81,36 @@ struct ProviderCardView: View {
     @ViewBuilder
     private var signInHelp: some View {
         if let hint = provider.loginHint ?? defaultLoginHint {
-            Text(hint)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(hint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if shouldShowClaudeSessionRefresh {
+                    Button("Refresh Claude Session") {
+                        TerminalHelper.runCommand("claude; creditwatcher login claude")
+                    }
+                    .controlSize(.small)
+                    .help("Open Terminal, run Claude sign-in, then import Claude credentials")
+                }
+            }
         }
+    }
+
+    private var shouldShowClaudeSessionRefresh: Bool {
+        guard provider.id == "claude" else { return false }
+        let text = [
+            provider.error,
+            provider.loginHint,
+            defaultLoginHint,
+        ]
+        .compactMap { $0 }
+        .joined(separator: " ")
+        .lowercased()
+
+        return text.contains("session expired")
+            || text.contains("sign in with claude")
+            || text.contains("run `claude`")
     }
 
     private var defaultLoginHint: String? {
