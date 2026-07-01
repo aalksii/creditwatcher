@@ -1,30 +1,24 @@
 # CreditWatcher
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
+[License: MIT](LICENSE)
+[Node.js](package.json)
 
 A **macOS menu bar app** and **CLI** to monitor **Codex**, **Claude Code**, and **Cursor** subscription usage limits — locally, read-only, with no telemetry.
 
 Inspired by the design spirit of [Stats](https://github.com/exelban/stats) (lightweight macOS menu bar utility).
 
-<p align="center">
-  <a href="https://github.com/aalksii/creditwatcher/releases/download/v0.1.0/CreditWatcher-0.1.0.dmg"><strong>Download CreditWatcher for macOS</strong></a>
-</p>
+**[Download CreditWatcher for macOS](https://github.com/aalksii/creditwatcher/releases/download/v0.1.1/CreditWatcher-0.1.1.dmg)**
 
-<p align="center">
-  Prebuilt installers are published through <a href="https://github.com/aalksii/creditwatcher/releases">GitHub Releases</a>.
-</p>
+Prebuilt installers are published through [GitHub Releases](https://github.com/aalksii/creditwatcher/releases).
 
 ## Screenshots
 
-<p align="center">
-  <img src="media/screenshot.png" alt="CreditWatcher menu bar popover" width="420">
-</p>
+
 
 ## Features
 
 - **Three providers** — Codex (OpenAI), Claude Code (Anthropic), Cursor in one place
-- **macOS menu bar app** — native Swift, no Node.js required at runtime
+- **macOS menu bar app** — native Swift; Node.js is only needed for CLI features
 - **CLI dashboard** — rich terminal view with color-coded progress bars
 - **Read-only usage checks** — never proxies inference or scrapes web UIs
 - **Local credentials** — reads existing logins from official tools; tokens stay on your machine
@@ -32,15 +26,19 @@ Inspired by the design spirit of [Stats](https://github.com/exelban/stats) (ligh
 - **60-second cooldown** — on-demand refresh, avoids hammering provider APIs
 - **Optional local web UI** — `creditwatcher serve` on `127.0.0.1` only
 
+
+
 ## Privacy & security
 
 CreditWatcher is designed to be local-first:
 
-| Data | Where it lives |
-|------|----------------|
+
+| Data                   | Where it lives                                                 |
+| ---------------------- | -------------------------------------------------------------- |
 | OAuth / session tokens | Read from local files only (menu bar app never reads Keychain) |
-| Usage responses | Cached under `~/.creditwatcher/` |
-| Network calls | Direct to official provider APIs only |
+| Usage responses        | Cached under `~/.creditwatcher/`                               |
+| Network calls          | Direct to official provider APIs only                          |
+
 
 - **No telemetry** — no analytics, crash reporters, or third-party servers
 - **No token logging** — access/refresh tokens are not printed in normal operation
@@ -48,15 +46,30 @@ CreditWatcher is designed to be local-first:
 - **Optional CLI import** — `creditwatcher login claude` may read Keychain once in Terminal to copy credentials into `~/.creditwatcher/claude-auth.json`
 - **Sandbox-free macOS app** — required to read local credential stores and call provider APIs; see [SECURITY.md](SECURITY.md)
 
+
+
 ## Prerequisites
 
-- **CLI:** Node.js 18+
-- **macOS app:** macOS 14+ (Sonoma), Xcode 15+
+- **macOS app:** macOS 14+ (Sonoma)
+- **CLI features:** Node.js 18+ı
+- **Build from source:** Node.js 18+ and Xcode 15+
 - **Provider logins:** sign in with official tools first (`codex login`, `claude`, Cursor.app)
+
+
 
 ## Install
 
-### Clone and build CLI
+There are two ways to install CreditWatcher:
+
+### Option 1: Download the DMG
+
+Download the latest DMG from [GitHub Releases](https://github.com/aalksii/creditwatcher/releases), open it, and drag **CreditWatcher** to **Applications**.
+
+The DMG bundles the Node CLI inside `CreditWatcher.app`. On launch from outside the installer volume, the app tries to install a `creditwatcher` shim into a writable terminal PATH directory such as `/opt/homebrew/bin`, `/usr/local/bin`, or `~/.local/bin`. It will not overwrite an existing non-CreditWatcher command.
+
+Node.js 18+ is required for the bundled CLI and the in-app **CLI** button.
+
+### Option 2: Build from Source
 
 ```bash
 git clone https://github.com/aalksii/creditwatcher.git
@@ -74,7 +87,7 @@ npm run status          # detailed text output per provider
 npm run quota           # JSON output (used by menu bar integration)
 ```
 
-### Build macOS menu bar app
+Build the macOS menu bar app:
 
 ```bash
 open macos/CreditWatcher.xcodeproj
@@ -89,7 +102,7 @@ xcodebuild -project macos/CreditWatcher.xcodeproj -scheme CreditWatcher -configu
 
 The built app is under Xcode DerivedData or `build/` when using `xcodebuild`.
 
-### Create a macOS DMG
+### Build a Local DMG
 
 For a local drag-to-Applications installer:
 
@@ -98,8 +111,6 @@ npm run macos:dmg
 ```
 
 The DMG is written to `dist/macos/CreditWatcher-<version>.dmg`.
-
-The DMG bundles the Node CLI inside `CreditWatcher.app`. On launch from outside the installer volume, the app tries to install a `creditwatcher` shim into a writable terminal PATH directory such as `/opt/homebrew/bin`, `/usr/local/bin`, or `~/.local/bin`. It will not overwrite an existing non-CreditWatcher command.
 
 For a clean local reinstall test:
 
@@ -123,16 +134,20 @@ Create the `notarytool` profile once with `xcrun notarytool store-credentials`.
 
 ## Usage
 
+
+
 ### CLI
 
-| Command | Description |
-|---------|-------------|
-| `creditwatcher dashboard` | Rich terminal dashboard — all providers |
-| `creditwatcher dashboard --force` | Skip the 60-second usage cooldown |
-| `creditwatcher status [codex\|claude\|cursor]` | Detailed usage per provider |
-| `creditwatcher quota --json` | Machine-readable quota JSON |
-| `creditwatcher login [codex\|claude\|cursor]` | Import or OAuth login helpers |
-| `creditwatcher serve` | Optional local web UI at http://127.0.0.1:9477 |
+
+| Command                                      | Description                                                             |
+| -------------------------------------------- | ----------------------------------------------------------------------- |
+| `creditwatcher dashboard`                    | Rich terminal dashboard — all providers                                 |
+| `creditwatcher dashboard --force`            | Skip the 60-second usage cooldown                                       |
+| `creditwatcher status [codex|claude|cursor]` | Detailed usage per provider                                             |
+| `creditwatcher quota --json`                 | Machine-readable quota JSON                                             |
+| `creditwatcher login [codex|claude|cursor]`  | Import or OAuth login helpers                                           |
+| `creditwatcher serve`                        | Optional local web UI at [http://127.0.0.1:9477](http://127.0.0.1:9477) |
+
 
 Example:
 
@@ -142,13 +157,15 @@ creditwatcher status claude
 creditwatcher quota --json
 ```
 
+
+
 ### macOS menu bar app
 
 1. Launch **CreditWatcher** from Xcode (⌘R) or open the built `.app`
 2. A gauge icon appears in the menu bar (no Dock icon)
 3. Click the icon for a popover with Codex, Claude, and Cursor usage cards
 4. Use the gear button to show/hide providers, reorder cards, and sign in or out per tool
-5. Icon tint reflects worst-case usage: system default &lt;70%, yellow 70–90%, red &gt;90%
+5. Icon tint reflects worst-case usage: system default <70%, yellow 70–90%, red >90%
 
 **Refresh:** auto-refresh on open; **Refresh** button bypasses the 60s cooldown. Background refresh every 60 seconds.
 
@@ -175,6 +192,8 @@ Auth order:
 
 1. `~/.codex/auth.json` (official Codex CLI)
 2. `~/.creditwatcher/auth.json` (via `creditwatcher login codex`)
+
+
 
 ### Claude Code (Anthropic)
 
@@ -209,6 +228,8 @@ Auth order:
 2. Cursor IDE SQLite state DB — `state.vscdb` key `cursorAuth/accessToken`
 3. `~/.creditwatcher/cursor-auth.json` (import copy via `creditwatcher login cursor`)
 
+
+
 ## Architecture
 
 ```
@@ -221,17 +242,21 @@ CreditWatcher.app (Swift)          creditwatcher CLI (Node.js)
                   ~/.creditwatcher/
 ```
 
-Native app calls provider APIs directly via `URLSession`. No Node.js required at runtime.
+The native app calls provider APIs directly via `URLSession`. Node.js is required only for CLI commands and the bundled terminal dashboard.
 
 ## Environment variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CODEX_HOME` | `~/.codex` | Codex CLI auth directory |
-| `CLAUDE_CONFIG_DIR` | `~/.claude` | Claude credentials directory |
-| `CURSOR_SESSION_TOKEN` | — | Cursor session cookie value |
-| `CURSOR_STATE_DB` | platform default | Override path to Cursor `state.vscdb` |
-| `CREDITWATCHER_OAUTH_PORT` | `1455` | OAuth callback port (Codex login) |
+
+| Variable                   | Default          | Description                           |
+| -------------------------- | ---------------- | ------------------------------------- |
+| `CODEX_HOME`               | `~/.codex`       | Codex CLI auth directory              |
+| `CLAUDE_CONFIG_DIR`        | `~/.claude`      | Claude credentials directory          |
+| `CURSOR_SESSION_TOKEN`     | —                | Cursor session cookie value           |
+| `CURSOR_STATE_DB`          | platform default | Override path to Cursor `state.vscdb` |
+| `CREDITWATCHER_OAUTH_PORT` | `1455`           | OAuth callback port (Codex login)     |
+
+
+
 
 ## Disclaimer
 
@@ -251,7 +276,11 @@ See the [Safety & Terms of Service](#safety--terms-of-service) section in this R
 - [ ] Demo GIF for README
 - [ ] npm publish for optional global CLI install
 
+
+
 ## Safety & Terms of Service
+
+
 
 ### What this tool does
 
@@ -261,6 +290,8 @@ See the [Safety & Terms of Service](#safety--terms-of-service) section in this R
 - On-demand checks with a **60-second cooldown** per provider
 - Direct calls to provider APIs — no third-party relay
 
+
+
 ### What this tool does NOT do
 
 - Proxy inference requests
@@ -269,15 +300,21 @@ See the [Safety & Terms of Service](#safety--terms-of-service) section in this R
 - Background polling beyond the 60s refresh interval
 - Log or print access/refresh tokens
 
+
+
 ### Risky patterns to avoid
 
-| Pattern | Why it's risky |
-|---------|----------------|
+
+| Pattern                          | Why it's risky                                        |
+| -------------------------------- | ----------------------------------------------------- |
 | Spoofing official client harness | Routing subscription quota through third-party agents |
-| Credential exfiltration | Sending OAuth tokens to third-party servers |
-| Inference proxying | Using subscription tokens for other users/tools |
-| Aggressive polling | Hammering usage endpoints |
-| Token sharing | Distributing refresh tokens across machines |
+| Credential exfiltration          | Sending OAuth tokens to third-party servers           |
+| Inference proxying               | Using subscription tokens for other users/tools       |
+| Aggressive polling               | Hammering usage endpoints                             |
+| Token sharing                    | Distributing refresh tokens across machines           |
+
+
+
 
 ## Contributing
 
@@ -291,3 +328,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Please report security issues via [SECUR
 
 - UI inspiration: [Stats](https://github.com/exelban/stats) by [exelban](https://github.com/exelban)
 - Codex OAuth flow aligned with the official Codex CLI patterns
+
