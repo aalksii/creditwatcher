@@ -21,9 +21,10 @@ CreditWatcher is a local-only usage monitor. It is **not** a hosted service.
 ### What the app does
 
 - Reads OAuth/session tokens from **local** stores only:
-  - Codex CLI auth (`~/.codex/auth.json` or `~/.creditwatcher/auth.json`)
-  - Claude Code credentials file or `~/.creditwatcher/claude-auth.json` (menu bar app never reads macOS Keychain)
+  - Codex local auth (`~/.codex/auth.json` or `~/.creditwatcher/auth.json`)
+  - Claude Code credentials file, macOS Keychain entries used by Claude Code, or `~/.creditwatcher/claude-auth.json`
   - Cursor IDE SQLite state database
+- Reads Claude Code Keychain entries only after the user chooses Claude **Sign In** and accepts the app's one-time Keychain notice. Later background refreshes use non-interactive Keychain reads, so they do not show surprise permission prompts.
 - Calls **official provider APIs** directly for read-only usage data:
   - OpenAI / Codex (`chatgpt.com`, `auth.openai.com`)
   - Anthropic (`api.anthropic.com`, `platform.claude.com`)
@@ -39,4 +40,4 @@ CreditWatcher is a local-only usage monitor. It is **not** a hosted service.
 
 ### Out of scope
 
-Issues in third-party services (OpenAI, Anthropic, Cursor), official CLI tools, or misuse of exported tokens are generally outside this project's security scope.
+Issues in third-party services (OpenAI, Anthropic, Cursor), official provider apps/tools, or misuse of exported tokens are generally outside this project's security scope.

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_PATH="${APP_PATH:-/Applications/CreditWatcher.app}"
+BUNDLE_ID="com.creditwatcher.menubar"
 DRY_RUN=0
 REMOVE_CACHE=0
 
@@ -16,7 +17,7 @@ for arg in "$@"; do
       ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: npm run macos:uninstall -- [--dry-run] [--cache]" >&2
+      echo "Usage: scripts/uninstall-local.sh [--dry-run] [--cache]" >&2
       exit 2
       ;;
   esac
@@ -55,6 +56,24 @@ remove_cli_shim() {
   fi
 }
 
+remove_preferences() {
+  local prefs="$HOME/Library/Preferences/$BUNDLE_ID.plist"
+
+  echo "Removing app preferences: $BUNDLE_ID"
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "Would run: defaults delete $BUNDLE_ID"
+  else
+    defaults delete "$BUNDLE_ID" >/dev/null 2>&1 || true
+  fi
+
+  if [[ -e "$prefs" ]]; then
+    echo "Removing preferences file: $prefs"
+    run rm "$prefs"
+  else
+    echo "Preferences file not found: $prefs"
+  fi
+}
+
 echo "Quitting CreditWatcher if it is running..."
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "Would ask macOS to quit CreditWatcher"
@@ -81,6 +100,7 @@ if [[ "$REMOVE_CACHE" -eq 1 ]]; then
   else
     echo "Cache/auth copy not found: $HOME/.creditwatcher"
   fi
+  remove_preferences
 else
   echo "Keeping $HOME/.creditwatcher. Pass --cache to remove local cache/auth copies too."
 fi

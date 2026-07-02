@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 struct CodexCredentials {
@@ -30,6 +31,30 @@ enum CodexAuth {
 
     static func forgetCopy() {
         try? FileManager.default.removeItem(at: creditwatcherAuthPath)
+    }
+
+    static func login() async throws -> CodexCredentials {
+        let pkce = try OAuthHelpers.pkcePair()
+        let state = try OAuthHelpers.state()
+        let server = OAuthCallbackServer(
+            expectedState: state,
+            path: CodexOAuth.redirectPath,
+            port: CodexOAuth.redirectPort
+        )
+        let callbackTask = Task {
+            try await server.awaitCode()
+        }
+
+        try await server.waitUntilReady()
+        let url = try CodexOAuth.authorizeURL(challenge: pkce.challenge, state: state)
+        await MainActor.run {
+            _ = NSWorkspace.shared.open(url)
+        }
+
+        let code = try await callbackTask.value
+        let creds = try await exchangeCode(code, verifier: pkce.verifier)
+        try saveCopy(creds)
+        return creds
     }
 
     private static func load(from url: URL) -> CodexCredentials? {
@@ -83,6 +108,59 @@ enum CodexAuth {
             sourcePath: creds.sourcePath
         )
     }
+
+    private static func exchangeCode(_ code: String, verifier: String) async throws -> CodexCredentials {
+        let url = URL(string: "\(CodexOAuth.issuer)/oauth/token")!
+        let body = OAuthHelpers.formBody([
+            URLQueryItem(name: "grant_type", value: "authorization_code"),
+            URLQueryItem(name: "code", value: code),
+            URLQueryItem(name: "redirect_uri", value: CodexOAuth.redirectURI),
+            URLQueryItem(name: "client_id", value: CodexOAuth.clientId),
+            URLQueryItem(name: "code_verifier", value: verifier),
+        ])
+        let data = try await HTTPClient.postForm(
+            url: url,
+            body: body,
+            headers: ["User-Agent": CodexOAuth.userAgent]
+        )
+
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let accessToken = json["access_token"] as? String,
+              let refreshToken = json["refresh_token"] as? String
+        else {
+            throw QuotaError.auth("Codex token response missing required tokens.")
+        }
+
+        let idToken = json["id_token"] as? String ?? ""
+        let accountId = JWTHelpers.chatGPTAccountId(from: idToken) ?? ""
+        return CodexCredentials(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            accountId: accountId,
+            idToken: idToken,
+            sourcePath: creditwatcherAuthPath.path
+        )
+    }
+
+    private static func saveCopy(_ creds: CodexCredentials) throws {
+        let url = creditwatcherAuthPath
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let body: [String: Any] = [
+            "tokens": [
+                "id_token": creds.idToken,
+                "access_token": creds.accessToken,
+                "refresh_token": creds.refreshToken,
+                "account_id": creds.accountId,
+            ],
+            "last_refresh": ISO8601DateFormatter().string(from: Date()),
+        ]
+        let data = try JSONSerialization.data(withJSONObject: body, options: [.prettyPrinted])
+        try data.write(to: url, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
 }
 
 enum CodexProvider {
@@ -118,7 +196,7 @@ enum CodexProvider {
         ProviderQuotaData(
             providerId: "codex",
             status: "not_connected",
-            loginHint: "Run `codex login` or `creditwatcher login codex`"
+            loginHint: "Open Settings and sign in to Codex."
         )
     }
 

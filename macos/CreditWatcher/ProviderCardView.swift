@@ -81,36 +81,10 @@ struct ProviderCardView: View {
     @ViewBuilder
     private var signInHelp: some View {
         if let hint = provider.loginHint ?? defaultLoginHint {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(hint)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if shouldShowClaudeSessionRefresh {
-                    Button("Refresh Claude Session") {
-                        TerminalHelper.runCommand("claude; \(CLIInstaller.terminalCommand(arguments: "login claude"))")
-                    }
-                    .controlSize(.small)
-                    .help("Open Terminal, run Claude sign-in, then import Claude credentials")
-                }
-            }
+            Text(hint)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-    }
-
-    private var shouldShowClaudeSessionRefresh: Bool {
-        guard provider.id == "claude" else { return false }
-        let text = [
-            provider.error,
-            provider.loginHint,
-            defaultLoginHint,
-        ]
-        .compactMap { $0 }
-        .joined(separator: " ")
-        .lowercased()
-
-        return text.contains("session expired")
-            || text.contains("sign in with claude")
-            || text.contains("run `claude`")
     }
 
     private var defaultLoginHint: String? {
@@ -121,9 +95,9 @@ struct ProviderCardView: View {
             if ClaudeAuth.fileCredentialsExist {
                 return "Claude credentials found but usage could not be loaded. Re-import, then click Refresh."
             }
-            return "Import Claude credentials. If needed, run `claude` first to sign in with Claude Code."
+            return "Open Settings and import your Claude Code sign-in."
         case "cursor":
-            return "Sign in to Cursor or import a session token, then click Refresh."
+            return "Sign in to Cursor, then click Refresh."
         default:
             return nil
         }

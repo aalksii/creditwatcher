@@ -99,6 +99,19 @@ struct PopoverView: View {
 
     private var settings: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if viewModel.showsClaudeKeychainNotice {
+                claudeKeychainNotice
+            }
+
+            if let message = viewModel.authStatusMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 2)
+            }
+
             ForEach(Array(viewModel.providerSettings.enumerated()), id: \.element.id) { index, setting in
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -151,6 +164,34 @@ struct PopoverView: View {
         .frame(maxHeight: 420, alignment: .top)
     }
 
+    private var claudeKeychainNotice: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Claude Keychain Access", systemImage: "key.fill")
+                .font(.subheadline.weight(.semibold))
+
+            Text("CreditWatcher needs macOS Keychain permission to import Claude Code credentials. This is only used when you connect Claude.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack {
+                Button("Continue") {
+                    viewModel.continueClaudeKeychainImport()
+                }
+                .controlSize(.small)
+
+                Button("Skip Claude") {
+                    viewModel.skipClaudeKeychainImport()
+                }
+                .controlSize(.small)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.7))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
     private func errorCard(message: String, hint: String?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Could not load usage", systemImage: "exclamationmark.triangle.fill")
@@ -192,11 +233,6 @@ struct PopoverView: View {
             }
             .controlSize(.small)
             .disabled(viewModel.isLoading)
-
-            Button("CLI") {
-                TerminalHelper.runCommand(CLIInstaller.terminalCommand(arguments: "dashboard --verbose"))
-            }
-            .controlSize(.small)
 
             Button("Quit") {
                 NSApp.terminate(nil)

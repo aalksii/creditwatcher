@@ -77,11 +77,11 @@ enum NativeQuotaService {
 
     private static func classifyHttpError(_ message: String, provider: ProviderID) -> String {
         if message.contains("(401)") || message.contains("(403)") {
-            return "Authentication failed. Sign in with the official CLI."
+            return "Authentication failed. Sign in again from Settings."
         }
         if message.contains("(429)") {
             if provider == .claude {
-                return "Rate limited or session expired. Sign in with Claude Code, then refresh."
+                return "Rate limited or session expired. Sign in again from Settings, then refresh."
             }
             return "Rate limited. Try again later."
         }
@@ -95,9 +95,9 @@ enum NativeQuotaService {
 
     private static func loginHint(for provider: ProviderID) -> String {
         switch provider {
-        case .codex: return "Run `codex login` or `creditwatcher login codex`"
-        case .claude: return "Run `claude` to sign in, or `creditwatcher login claude`"
-        case .cursor: return "Sign in to the Cursor app, or `creditwatcher login cursor`"
+        case .codex: return "Open Settings and sign in to Codex."
+        case .claude: return "Open Settings and import your Claude Code sign-in."
+        case .cursor: return "Sign in to the Cursor app, then refresh."
         }
     }
 

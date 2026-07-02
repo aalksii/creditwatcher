@@ -22,8 +22,7 @@
 		A100000100000014 /* ClaudeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000016 /* ClaudeProvider.swift */; };
 		A100000100000015 /* CursorProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000017 /* CursorProvider.swift */; };
 		A100000100000016 /* NativeQuotaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000018 /* NativeQuotaService.swift */; };
-		A100000100000017 /* TerminalHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000019 /* TerminalHelper.swift */; };
-		A100000100000018 /* CLIInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000020 /* CLIInstaller.swift */; };
+		A100000100000019 /* ProviderAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000021 /* ProviderAuthService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,8 +43,7 @@
 		A100000200000016 /* ClaudeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProvider.swift; sourceTree = "<group>"; };
 		A100000200000017 /* CursorProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorProvider.swift; sourceTree = "<group>"; };
 		A100000200000018 /* NativeQuotaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeQuotaService.swift; sourceTree = "<group>"; };
-		A100000200000019 /* TerminalHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalHelper.swift; sourceTree = "<group>"; };
-		A100000200000020 /* CLIInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLIInstaller.swift; sourceTree = "<group>"; };
+		A100000200000021 /* ProviderAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderAuthService.swift; sourceTree = "<group>"; };
 		A100000300000001 /* CreditWatcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreditWatcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -79,14 +77,13 @@
 				A100000200000015 /* CodexProvider.swift */,
 				A100000200000016 /* ClaudeProvider.swift */,
 				A100000200000017 /* CursorProvider.swift */,
+				A100000200000021 /* ProviderAuthService.swift */,
 				A100000200000012 /* JWTHelpers.swift */,
 				A100000200000013 /* QuotaCache.swift */,
 				A100000200000014 /* HTTPClient.swift */,
 				A100000200000003 /* PopoverView.swift */,
 				A100000200000004 /* ProviderCardView.swift */,
 				A100000200000005 /* QuotaViewModel.swift */,
-				A100000200000019 /* TerminalHelper.swift */,
-				A100000200000020 /* CLIInstaller.swift */,
 				A100000200000006 /* Assets.xcassets */,
 				A100000200000007 /* Info.plist */,
 				A100000200000008 /* CreditWatcher.entitlements */,
@@ -185,8 +182,7 @@
 				A100000100000003 /* PopoverView.swift in Sources */,
 				A100000100000004 /* ProviderCardView.swift in Sources */,
 				A100000100000005 /* QuotaViewModel.swift in Sources */,
-				A100000100000017 /* TerminalHelper.swift in Sources */,
-				A100000100000018 /* CLIInstaller.swift in Sources */,
+				A100000100000019 /* ProviderAuthService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

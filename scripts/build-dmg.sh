@@ -10,11 +10,8 @@ STAGING_DIR="$ROOT_DIR/build/dmg-staging"
 DIST_DIR="$ROOT_DIR/dist/macos"
 APP_NAME="CreditWatcher"
 APP_PATH="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION/$APP_NAME.app"
-VERSION="${VERSION:-$(node -p "require('$ROOT_DIR/package.json').version")}"
+VERSION="${VERSION:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ROOT_DIR/macos/CreditWatcher/Info.plist")}"
 DMG_PATH="$DIST_DIR/$APP_NAME-$VERSION.dmg"
-
-echo "Building bundled CLI..."
-npm run build
 
 echo "Building $APP_NAME.app ($CONFIGURATION)..."
 xcodebuild \
@@ -30,25 +27,8 @@ if [[ ! -d "$APP_PATH" ]]; then
   exit 1
 fi
 
-CLI_RESOURCES="$APP_PATH/Contents/Resources/cli"
-rm -rf "$CLI_RESOURCES"
-mkdir -p "$CLI_RESOURCES"
-ditto "$ROOT_DIR/dist" "$CLI_RESOURCES/dist"
-cat > "$CLI_RESOURCES/creditwatcher" <<'SH'
-#!/usr/bin/env bash
-set -euo pipefail
-
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-if ! command -v node >/dev/null 2>&1; then
-  echo "CreditWatcher CLI requires Node.js 18 or newer." >&2
-  echo "Install Node.js, then run this command again." >&2
-  exit 127
-fi
-
-exec node "$ROOT_DIR/dist/cli.js" "$@"
-SH
-chmod +x "$CLI_RESOURCES/creditwatcher"
+# Remove CLI resources from older local builds that reused the same DerivedData path.
+rm -rf "$APP_PATH/Contents/Resources/cli"
 
 rm -rf "$STAGING_DIR"
 mkdir -p "$STAGING_DIR" "$DIST_DIR"

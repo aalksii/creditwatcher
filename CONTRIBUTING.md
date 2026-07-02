@@ -1,27 +1,8 @@
 # Contributing to CreditWatcher
 
-Thank you for your interest in contributing. This project includes a Node.js CLI and a native macOS menu bar app.
+Thank you for your interest in contributing. CreditWatcher is a native macOS menu bar app.
 
 ## Development setup
-
-### CLI
-
-```bash
-git clone https://github.com/aalksii/creditwatcher.git
-cd creditwatcher
-npm install
-npm run build
-npm link   # optional — install `creditwatcher` on your PATH
-```
-
-Run without linking:
-
-```bash
-npm run dashboard
-npm run status
-```
-
-### macOS menu bar app
 
 Requirements: macOS 14+, Xcode 15+.
 
@@ -36,21 +17,26 @@ Or from the command line:
 xcodebuild -project macos/CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Debug build
 ```
 
-Sign in with the official Codex CLI, Claude Code, and/or Cursor.app before testing provider integrations.
+Build a local DMG:
+
+```bash
+scripts/build-dmg.sh
+```
+
+Sign in to Codex from CreditWatcher Settings, Claude Code, and/or Cursor.app before testing provider integrations.
 
 ## Pull requests
 
 1. Open an issue first for large changes so we can align on approach.
 2. Keep PRs focused — one logical change per PR when possible.
 3. Verify locally before submitting:
-   - `npm run build`
    - `xcodebuild -project macos/CreditWatcher.xcodeproj -scheme CreditWatcher -configuration Debug build`
+   - `scripts/build-dmg.sh`
 4. Do not commit secrets, tokens, or personal paths.
 5. Update README if you change user-facing behavior or setup steps.
 
 ## Code style
 
-- TypeScript: match existing patterns in `src/` (ES modules, strict mode).
 - Swift: follow existing SwiftUI/AppKit conventions in `macos/CreditWatcher/`.
 - Avoid adding dependencies unless they clearly reduce complexity.
 

@@ -66,9 +66,6 @@ enum ProviderID: String, CaseIterable {
         }
     }
 
-    var loginCommand: String {
-        "creditwatcher login \(rawValue)"
-    }
 }
 
 struct ProviderDisplaySetting: Codable, Identifiable, Equatable {

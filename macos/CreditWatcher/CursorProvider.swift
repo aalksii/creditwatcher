@@ -114,7 +114,7 @@ enum CursorProvider {
             return ProviderQuotaData(
                 providerId: "cursor",
                 status: "not_connected",
-                loginHint: "Sign in to the Cursor app, or run `creditwatcher login cursor`"
+                loginHint: "Sign in to the Cursor app, then refresh."
             )
         }
 

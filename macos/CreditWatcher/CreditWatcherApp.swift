@@ -32,7 +32,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        CLIInstaller.installShimIfPossible()
         menuBarController = MenuBarController(viewModel: viewModel)
         AppLogger.info("Launch complete — menu bar should be visible")
     }

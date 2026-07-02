@@ -43,4 +43,25 @@ enum HTTPClient {
         }
         return data
     }
+
+    static func postForm(url: URL, body: Data, headers: [String: String] = [:]) async throws -> Data {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        for (key, value) in headers {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
+        request.httpBody = body
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw QuotaError.http(status: 0, body: "Invalid response")
+        }
+        guard (200...299).contains(http.statusCode) else {
+            let text = String(data: data, encoding: .utf8) ?? ""
+            throw QuotaError.http(status: http.statusCode, body: text)
+        }
+        return data
+    }
 }

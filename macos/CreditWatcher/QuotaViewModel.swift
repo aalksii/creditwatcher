@@ -6,11 +6,14 @@ final class QuotaViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var errorHint: String?
+    @Published var authStatusMessage: String?
+    @Published var showsClaudeKeychainNotice = false
     @Published private(set) var providerSettings: [ProviderDisplaySetting]
     @Published private(set) var signedOutProviders: Set<String>
 
     private var refreshTask: Task<Void, Never>?
     private var backgroundTask: Task<Void, Never>?
+    private var authTask: Task<Void, Never>?
     private let providerSettingsKey = "providerDisplaySettings"
     private let signedOutProvidersKey = "signedOutProviders"
 
@@ -24,6 +27,7 @@ final class QuotaViewModel: ObservableObject {
     deinit {
         refreshTask?.cancel()
         backgroundTask?.cancel()
+        authTask?.cancel()
     }
 
     func refresh(force: Bool = false) {
@@ -77,8 +81,29 @@ final class QuotaViewModel: ObservableObject {
         if isSignedIn(providerId) {
             signOut(providerId)
         } else {
+            if shouldShowClaudeKeychainNotice(for: providerId) {
+                showsClaudeKeychainNotice = true
+                authStatusMessage = "Claude needs permission before importing from Keychain."
+                return
+            }
             signIn(providerId)
         }
+    }
+
+    func continueClaudeKeychainImport() {
+        UserDefaults.standard.set(true, forKey: ClaudeAuth.keychainImportAllowedKey)
+        UserDefaults.standard.set(false, forKey: ClaudeAuth.keychainImportSkippedKey)
+        showsClaudeKeychainNotice = false
+        signIn(ProviderID.claude.rawValue)
+    }
+
+    func skipClaudeKeychainImport() {
+        UserDefaults.standard.set(false, forKey: ClaudeAuth.keychainImportAllowedKey)
+        UserDefaults.standard.set(true, forKey: ClaudeAuth.keychainImportSkippedKey)
+        showsClaudeKeychainNotice = false
+        signOut(ProviderID.claude.rawValue)
+        setProviderVisible(ProviderID.claude.rawValue, isVisible: false)
+        authStatusMessage = "Claude skipped. You can re-enable it in Settings."
     }
 
     func isSignedIn(_ providerId: String) -> Bool {
@@ -90,11 +115,33 @@ final class QuotaViewModel: ObservableObject {
     }
 
     private func signIn(_ providerId: String) {
-        signedOutProviders.remove(providerId)
-        saveSignedOutProviders()
-        let command = ProviderID(rawValue: providerId)?.loginCommand ?? "creditwatcher login \(providerId)"
-        TerminalHelper.runCommand(command)
-        refresh(force: true)
+        guard let provider = ProviderID(rawValue: providerId) else { return }
+        authTask?.cancel()
+        authTask = Task {
+            isLoading = true
+            authStatusMessage = "Connecting \(provider.displayName)..."
+            errorMessage = nil
+            defer { isLoading = false }
+
+            do {
+                try await ProviderAuthService.signIn(provider)
+                signedOutProviders.remove(providerId)
+                saveSignedOutProviders()
+                authStatusMessage = "\(provider.displayName) connected."
+                refresh(force: true)
+            } catch {
+                authStatusMessage = error.localizedDescription
+                errorMessage = "\(provider.displayName): \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func shouldShowClaudeKeychainNotice(for providerId: String) -> Bool {
+        let isVisible = providerSettings.first(where: { $0.id == providerId })?.isVisible ?? true
+        return providerId == ProviderID.claude.rawValue
+            && !UserDefaults.standard.bool(forKey: ClaudeAuth.keychainImportAllowedKey)
+            && (!UserDefaults.standard.bool(forKey: ClaudeAuth.keychainImportSkippedKey) || isVisible)
+            && !ClaudeAuth.fileCredentialsExist
     }
 
     private func signOut(_ providerId: String) {
@@ -104,6 +151,7 @@ final class QuotaViewModel: ObservableObject {
         forgetCredentials(for: provider)
         QuotaCache.clearProvider(provider)
         replaceProvider(with: signedOutQuotaProvider(provider))
+        authStatusMessage = "\(provider.displayName) signed out."
     }
 
     private func load(force: Bool) async {

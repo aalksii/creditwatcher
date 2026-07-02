@@ -17,7 +17,7 @@ enum QuotaCache {
         let fetchedAt = normalizeFetchedAt(entry.fetchedAt)
         let elapsed = Date().timeIntervalSince1970 - fetchedAt
 
-        // Mixed CLI (ms) / app (s) cache formats can produce bogus wait times.
+        // Older cache files may use milliseconds; current app writes seconds.
         if elapsed < 0 || elapsed > minInterval {
             try? FileManager.default.removeItem(at: url)
             return
