@@ -6,7 +6,7 @@ A native **macOS menu bar app** to monitor **Codex**, **Claude Code**, and **Cur
 
 Inspired by the design spirit of [Stats](https://github.com/exelban/stats): a lightweight utility that lives quietly in the menu bar.
 
-**[Download CreditWatcher for macOS](https://github.com/aalksii/creditwatcher/releases)**
+**[Download CreditWatcher for macOS](https://github.com/aalksii/creditwatcher/releases/download/v0.2.0/CreditWatcher-0.2.0.dmg)**
 
 ## Important: Claude Keychain Access
 
@@ -49,7 +49,7 @@ Node.js is not required to install or run the macOS app.
 
 ## Install
 
-Download the latest DMG from [GitHub Releases](https://github.com/aalksii/creditwatcher/releases), open it, and drag **CreditWatcher** to **Applications**.
+Download the latest DMG from [GitHub Releases](https://github.com/aalksii/creditwatcher/releases/latest), open it, and drag **CreditWatcher** to **Applications**.
 
 Launch **CreditWatcher**. A gauge icon appears in the menu bar with no Dock icon.
 
@@ -153,7 +153,7 @@ scripts/uninstall-local.sh
 scripts/build-dmg.sh
 ```
 
-Then open `dist/macos/CreditWatcher-1.0.dmg` and drag **CreditWatcher** to **Applications**.
+Then open `dist/macos/CreditWatcher-0.2.0.dmg` and drag **CreditWatcher** to **Applications**.
 
 By default, the uninstall script removes `/Applications/CreditWatcher.app` and old CreditWatcher-owned terminal shims, but keeps `~/.creditwatcher` so existing auth/cache copies survive. To reset all local CreditWatcher data and app preferences too:
 
